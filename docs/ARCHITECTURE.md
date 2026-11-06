@@ -1,11 +1,13 @@
 # Architecture
 
-PeaCOBOL separates deterministic analysis from execution:
+PeaCOBOL 0.2.0 separates deterministic analysis, data interpretation, execution, evidence, and audit concerns:
 
-1. **Parser and index** reads source and copybooks without executing them.
-2. **Assurance engine** runs versioned deterministic rules.
-3. **Build adapter** invokes GnuCOBOL only when explicitly requested.
-4. **Evidence engine** records hashes, environment, findings, and results.
-5. **Local UI** binds to `127.0.0.1` and exposes read-only analysis.
+1. **Source assurance** discovers programs, calls, copy references, paragraphs, and deterministic findings without executing project code.
+2. **Copybook layout** constructs a hierarchy, computes offsets and repeated lengths, and validates overlays.
+3. **Record workbench** decodes display, binary, and packed-decimal fields and converts fixed records.
+4. **Build adapter** invokes GnuCOBOL through a fixed argument array with a timeout; compiled programs are never run by PeaCOBOL.
+5. **Evidence engine** hashes bounded project inputs and emits a reproducible manifest.
+6. **Audit engine** appends hash-linked events for actions and outcomes.
+7. **Local UI** is read-only, loopback-bound, and restricted to a configured project root.
 
-Planned adapters: IBM Enterprise COBOL/JCL, Zowe CLI/zOSMF, Db2 bind, CICS, MQ, COBOL Check, SARIF, SBOM, signed attestations and organization policy packs.
+Remote execution, credential handling, and mainframe submission remain outside this trust boundary.
