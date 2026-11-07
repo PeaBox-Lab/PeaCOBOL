@@ -1,54 +1,71 @@
-# PeaCOBOL 0.5.0
+# PeaCOBOL 0.6.0
 
-PeaCOBOL is a local-first COBOL data, development, diagnostics, assurance, and change-impact toolkit. Version 0.5.0 is the **Assurance and Change Impact** release.
+PeaCOBOL is a local-first COBOL data, development, diagnostics, assurance, change-impact, and testing toolkit. Version 0.6.0 is the **Test Workbench and GUI** release.
 
-## What is included
+## New Test Workbench
 
-- Program call graphs with resolved and unresolved targets
-- Program and copybook dependency graphs, including nested `COPY` references
-- Field read/write inventories for deterministic statement patterns
-- Paragraph-level control-flow edges for fallthrough, `PERFORM`, and `GO TO`
-- External-input data-flow tracking through supported `MOVE` and `COMPUTE` patterns
-- Assurance rules for unbounded subscripts, potentially truncating moves, sensitive use of external input, and `MOVE CORRESPONDING` change risk
-- Field-level copybook change-impact comparison with source hashes, record-length deltas, compatibility decisions, and an overall impact hash
-- SARIF 2.1.0 export and configurable severity gates
-- Diagnostics Center, build profiles, IBM JCL generation, record tools, reproducible evidence, and hash-chained auditing from earlier releases
+- Copybook-driven typical, minimum, maximum, and invalid fixed-record cases
+- Deterministic record hex, decoded value intent, source hash, and cases hash
+- COBOL Check-compatible starter program generation
+- Byte-for-byte golden-master comparison with hashes and first-difference offset
+- Normalized JSON line-coverage import, evidence linkage, integrity hash, and minimum-coverage gate
+- Deterministic malformed-copybook robustness tests
 
-## Quick start
+## New GUI interface
 
-```bash
-python -m pip install -e .
-peacobol assure examples/payments -o assurance.json
-peacobol assure examples/payments --format sarif -o assurance.sarif
-peacobol assure examples/payments --fail-on high -o gate.json
-```
-
-A failed assurance gate exits with status 3. Thresholds include the selected severity and all more severe findings.
-
-Compare copybook versions:
+Launch the loopback-only interface:
 
 ```bash
-peacobol impact before/ACCOUNT.cpy after/ACCOUNT.cpy -o impact.json
-peacobol impact before/ACCOUNT.cpy after/ACCOUNT.cpy --fail-on-breaking -o impact-gate.json
+peacobol-ui --root /path/to/approved/projects
 ```
 
-`--fail-on-breaking` exits with status 3 when a field is removed or when its storage, location, occurrence, overlay, usage, picture, or parent changes. Record-length changes are also incompatible.
+Open the tokenized URL printed at startup, such as `http://127.0.0.1:8765/?token=<random-session-token>`. Every request requires that launch token and a loopback `Host` header. The GUI provides seven workbenches:
 
-## Assurance outputs
+1. **Scan** — project inventory and baseline findings
+2. **Assurance** — graphs, field inventories, findings, and severity gates
+3. **Diagnostics** — spool analysis, source context, and investigation checklist
+4. **Change impact** — field-level copybook comparison
+5. **Test cases** — generated records and COBOL Check-compatible starter text
+6. **Golden compare** — binary regression comparison
+7. **Coverage** — coverage summary, evidence linkage, and integrity details
 
-The JSON assurance report contains:
+All user paths are relative to the administrator-selected root. Absolute paths, traversal, and symlink paths are rejected. The GUI binds only to `127.0.0.1`, uses server-rendered HTML with no scripts, sends a restrictive Content Security Policy, prevents framing and referrer leakage, and disables browser caching.
 
-- `program_graph`
-- `copybook_graph`
-- `field_access`
-- `control_flow`
-- `data_flow`
-- `findings`
-- `summary`
-- `gate`
+## CLI examples
 
-SARIF output contains one rule definition per PeaCOBOL rule and a result with file, line, severity, message, and remediation for every finding.
+Generate test cases:
+
+```bash
+peacobol test-cases copybooks/ACCOUNT.cpy --cobol-check-program PAYMENT -o cases.json
+```
+
+Compare golden outputs:
+
+```bash
+peacobol golden actual.dat expected.dat --fail-on-difference -o golden.json
+```
+
+Import coverage and require at least 85%:
+
+```bash
+peacobol coverage coverage.json --evidence-manifest reports/evidence.json --project . --minimum 85 -o coverage-report.json
+```
+
+A failed golden or coverage gate exits with status 3.
+
+## Coverage input
+
+Coverage import accepts bounded JSON in this shape:
+
+```json
+{
+  "lines": [
+    {"file": "src/PAYMENT.cbl", "line": 10, "hits": 3},
+    {"file": "src/PAYMENT.cbl", "line": 11, "hits": 0}
+  ]
+}
+```
 
 ## Boundaries
 
-The analyzer remains deterministic and narrower than a compiler. Access and flow inventories cover explicit supported statement patterns and do not claim complete COBOL semantic analysis. A finding identifies a review requirement, not proof of a defect. Change-impact comparison is structural and does not replace application or interface testing.
+Generated test cases are structural boundary aids, not complete business-rule tests. The COBOL Check output is a starter program and does not invoke or bundle COBOL Check. Coverage gates verify the evidence manifest and current project hashes, derive the denominator from verified nonblank source lines, and do not execute source code. The GUI has no authentication and must remain loopback-only.

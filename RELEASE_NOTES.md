@@ -1,29 +1,30 @@
-# PeaCOBOL 0.5.0 Release Notes
+# PeaCOBOL 0.6.0 Release Notes
 
 ## Release theme
 
-**Assurance and Change Impact**
+**Test Workbench and GUI**
 
-This release adds inspectable structural relationships and deterministic gates without claiming standards-complete parsing or semantic proof.
+This release makes PeaCOBOL's local analysis workflows accessible through both automation-safe CLI commands and a secure multi-workbench browser interface.
 
 ## Delivered
 
-- Program call graph and copybook dependency graph.
-- Field read/write inventory and paragraph-level control-flow edges.
-- Supported external-input data-flow propagation.
-- Rules `PC501` unbounded subscript review, `PC502` potential truncation, `PC503` external input at sensitive operations, and `PC504` `MOVE CORRESPONDING` change risk.
-- Field-level copybook comparison with compatibility classification and a deterministic impact hash.
-- SARIF 2.1.0 output.
-- `assure` and `impact` CLI commands with exit-status gates.
+- Copybook-driven boundary and invalid record generation.
+- COBOL Check-compatible starter generation.
+- Golden-master binary comparison with first-difference location and hashes.
+- Coverage import, evidence linkage, integrity hashing, and minimum threshold gates.
+- A seven-workbench loopback GUI for scanning, assurance, diagnostics, impact, tests, golden comparison, and coverage.
+- Server-rendered, script-free pages with root containment, symlink rejection, strict loopback Host validation, a random per-launch token, CSP, no-referrer, nosniff, frame protection, and no-store caching.
+- CLI commands `test-cases`, `golden`, and `coverage`.
 
 ## Validation summary
 
-- 69 automated tests pass: 46 retained regression tests and 23 new 0.5.0 tests.
+- 92 automated tests pass: 69 retained regression tests and 23 new 0.6.0 tests.
 - Python source compilation passes.
-- Tests cover resolved call and copybook edges, access and flow inventories, new findings, severity gates, compatible and breaking copybook changes, deterministic impact hashes, and SARIF mapping.
-- End-to-end CLI validation covers JSON, SARIF, assurance gate, impact report, and breaking-change gate behavior.
-- Review-driven fixes cover multi-target statements, qualified fields, conditional and computed control flow, non-downgradable profiles, build-output containment, and concurrent audit integrity.
+- GUI tests run a live loopback server and validate navigation, workbench output, security headers, traversal rejection, symlink rejection, and 404 behavior.
+- Test Workbench tests cover generated records, starter output, golden differences, coverage normalization, invalid input, and deterministic malformed-copybook robustness.
+- End-to-end CLI validation covers all three new commands and their gate exit semantics.
+- Independent certification found no significant remaining issues after review-driven parser, coverage, golden-comparison, signed-boundary, and GUI security fixes.
 
 ## Boundary
 
-The analyzer is intentionally heuristic and deterministic. Findings require review in context and are not proof that runtime failure or exploitation is possible.
+The GUI is intentionally unauthenticated and loopback-only. Do not expose it through shared bindings, reverse proxies, tunnels, or port forwarding.

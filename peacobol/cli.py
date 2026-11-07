@@ -8,6 +8,7 @@ from typing import Any
 from .assurance import analyze_assurance
 from .audit import append_event, verify_log
 from .copybook import parse_copybook, record_length
+from .coverage import import_coverage
 from .impact import compare_copybooks
 from .core import build, create_project, doctor, evidence, scan_project
 from .investigation import diagnose, failure_bundle
@@ -18,6 +19,7 @@ from .profiles import list_profiles, load_profile, resolve_profile_name
 from .records import convert_records, decode_record, hex_view
 from .sarif import to_sarif
 from .spool import read_spool
+from .testworkbench import cobol_check_stub, compare_golden, generate_cases
 
 def _atomic_write(path: Path, data: str) -> None:
     path = path.resolve()
@@ -73,6 +75,9 @@ def parser() -> argparse.ArgumentParser:
     x = sub.add_parser("failure-bundle", help="Create a deterministic hashed failure bundle"); x.add_argument("path", nargs="?", default="."); x.add_argument("spool"); x.add_argument("--context-lines", type=int, default=3); x.add_argument("-o", "--output", required=True)
     x = sub.add_parser("assure", help="Build assurance graphs, inventories and findings"); x.add_argument("path", nargs="?", default="."); x.add_argument("--fail-on", choices=("none", "critical", "high", "medium", "low"), default="none"); x.add_argument("--format", choices=("json", "sarif"), default="json"); x.add_argument("-o", "--output")
     x = sub.add_parser("impact", help="Compare two copybook versions field by field"); x.add_argument("before"); x.add_argument("after"); x.add_argument("--fail-on-breaking", action="store_true"); x.add_argument("-o", "--output")
+    x = sub.add_parser("test-cases", help="Generate boundary and invalid records from a copybook"); x.add_argument("copybook"); x.add_argument("--encoding", choices=("ascii", "utf-8", "cp037", "cp500"), default="ascii"); x.add_argument("--byteorder", choices=("big", "little"), default="big"); x.add_argument("--unsigned", action="store_true"); x.add_argument("--cobol-check-program"); x.add_argument("-o", "--output")
+    x = sub.add_parser("golden", help="Compare actual and expected binary outputs"); x.add_argument("actual"); x.add_argument("expected"); x.add_argument("--fail-on-difference", action="store_true"); x.add_argument("-o", "--output")
+    x = sub.add_parser("coverage", help="Import normalized JSON line coverage"); x.add_argument("file"); x.add_argument("--evidence-manifest"); x.add_argument("--project"); x.add_argument("--minimum", type=float); x.add_argument("-o", "--output")
     return p
 
 def _select_profile(args: argparse.Namespace, root: Path, fallback: str) -> str:
@@ -151,6 +156,26 @@ def dispatch(args: argparse.Namespace) -> Any:
         report["ok"] = not (args.fail_on_breaking and not report["compatible"])
         report["gate"] = {"fail_on_breaking": args.fail_on_breaking, "ok": report["ok"]}
         return report
+    if args.cmd == "test-cases":
+        report = generate_cases(Path(args.copybook), args.encoding, args.byteorder, not args.unsigned)
+        if args.cobol_check_program:
+            report["cobol_check"] = cobol_check_stub(args.cobol_check_program, report)
+        return report
+    if args.cmd == "golden":
+        report = compare_golden(Path(args.actual), Path(args.expected))
+        report["gate"] = {"fail_on_difference": args.fail_on_difference, "ok": report["ok"] or not args.fail_on_difference}
+        report["ok"] = report["gate"]["ok"]
+        return report
+    if args.cmd == "coverage":
+        if args.minimum is not None and (args.minimum < 0 or args.minimum > 100):
+            raise ValueError("Minimum coverage must be between 0 and 100")
+        if args.minimum is not None and (not args.evidence_manifest or not args.project):
+            raise ValueError("A minimum coverage gate requires --evidence-manifest and --project")
+        report = import_coverage(Path(args.file), Path(args.evidence_manifest) if args.evidence_manifest else None, Path(args.project) if args.project else None)
+        passed = args.minimum is None or report["summary"]["percent"] >= args.minimum
+        report["gate"] = {"minimum": args.minimum, "ok": passed}
+        report["ok"] = passed
+        return report
     raise ValueError(f"Unknown command: {args.cmd}")
 
 def main(argv: list[str] | None = None) -> int:
@@ -165,7 +190,7 @@ def main(argv: list[str] | None = None) -> int:
         gate_ok = result.get("ok", True)
         if args.cmd == "assure" and args.format == "sarif":
             gate_ok = result["runs"][0].get("properties", {}).get("gate", {}).get("ok", True)
-        return 3 if args.cmd in ("gate", "assure", "impact") and not gate_ok else 0
+        return 3 if args.cmd in ("gate", "assure", "impact", "golden", "coverage") and not gate_ok else 0
     except Exception as exc:
         if not args.no_audit:
             try:

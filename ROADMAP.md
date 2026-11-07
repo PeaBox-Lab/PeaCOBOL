@@ -29,7 +29,7 @@
 - Bounds, subscript, dangerous movement, and data-flow rules.
 - SARIF export and configurable severity gates.
 
-## 0.6.0 — Test Workbench
+## Delivered: 0.6.0 — Test Workbench and GUI
 
 - COBOL Check integration.
 - Boundary and invalid-data generation from copybooks.

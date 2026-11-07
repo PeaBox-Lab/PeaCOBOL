@@ -66,25 +66,33 @@ def storage_length(pic: str, usage: str) -> int:
         return 8
     return display_length(pic)
 def _logical_lines(path: Path) -> list[tuple[int, str]]:
-    lines: list[tuple[int, str]] = []
+    entries: list[tuple[int, str]] = []
     pending = ""
     start = 0
     for number, raw in enumerate(path.read_text(encoding="utf-8", errors="replace").splitlines(), 1):
         if len(raw) >= 7 and raw[6] in ("*", "/"):
             continue
-        text = raw[6:] if len(raw) >= 7 and raw[:6].strip().isdigit() else raw
-        text = text.strip()
+        fixed = len(raw) >= 7 and (raw[:6].strip().isdigit() or not raw[:6].strip())
+        continuation = fixed and raw[6] == "-"
+        source_area = raw[7:] if continuation else raw[6:] if fixed else raw
+        continuation_separator = " " if continuation and source_area[:1].isspace() else ""
+        text = source_area.strip()
         if not text:
             continue
+        begins_entry = DECL_RE.match(text) is not None
+        if begins_entry and pending:
+            entries.append((start, pending))
+            pending = ""
         if not pending:
             start = number
-        pending = f"{pending} {text}".strip()
+        separator = continuation_separator if continuation else " "
+        pending = f"{pending}{separator}{text}".strip()
         if text.endswith("."):
-            lines.append((start, pending))
+            entries.append((start, pending))
             pending = ""
     if pending:
-        lines.append((start, pending))
-    return lines
+        entries.append((start, pending))
+    return entries
 def parse_copybook(path: Path) -> list[Field]:
     path = path.resolve()
     if not path.is_file():

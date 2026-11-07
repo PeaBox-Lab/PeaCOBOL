@@ -1,14 +1,13 @@
 # Architecture
 
-PeaCOBOL 0.5.0 separates deterministic source interpretation into inspectable layers:
+PeaCOBOL 0.6.0 adds a testing and presentation layer while preserving the prior deterministic engines:
 
-1. **Source inventory** applies bounded file discovery and comment-aware line extraction.
-2. **Base assurance** identifies programs, calls, copy references, paragraphs, and stable line-oriented findings.
-3. **Graph engine** resolves program identities, call targets, copybook names, and paragraph edges.
-4. **Access and flow engine** records supported field reads, writes, and external-input propagation.
-5. **Change-impact engine** compares flattened copybook paths and storage attributes, then hashes the canonical result.
-6. **SARIF adapter** maps rules, severities, locations, and remediation into SARIF 2.1.0.
-7. **Gate engine** applies selected severity or breaking-change thresholds with automation-safe exit status 3.
-8. **Diagnostics, build, data, evidence, and audit layers** retain the controls delivered in earlier releases.
+1. **Copybook test generator** creates bounded record variants directly from computed field layout and representation.
+2. **Golden comparator** performs byte-level equality, first-difference detection, and integrity hashing without executing tested programs.
+3. **Coverage importer** validates bounded JSON line coverage, normalizes paths and counts, links an optional evidence hash, and computes a coverage hash.
+4. **GUI controller** maps seven read-oriented workbenches to existing analysis functions through server-rendered HTML.
+5. **Path boundary** resolves only non-symlinked relative files and directories beneath the configured GUI root.
+6. **Browser boundary** uses loopback binding, no scripts, restrictive CSP, no-store caching, no-referrer, nosniff, and frame denial.
+7. **Existing assurance, diagnostics, impact, build, evidence, and audit engines** remain reusable by both CLI and GUI.
 
-The architecture deliberately avoids claiming complete compiler semantics. Each derived relationship retains its file and line evidence where available.
+The GUI does not provide remote submission, arbitrary commands, source editing, authentication, or shared binding.

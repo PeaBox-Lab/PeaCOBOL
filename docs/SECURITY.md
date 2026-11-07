@@ -51,3 +51,17 @@ Add sandboxed build workers, signed releases and rules, vault-managed credential
 - Release, banking, and aerospace profile overrides cannot weaken inherited finding, warning, or evidence gates.
 - Build output directories and target components reject symlinks and remain contained beneath the project build root.
 - Audit append and verification operations share an inter-process lock over complete hash-chain transactions.
+
+## 0.6.0 GUI and testing controls
+
+- The GUI binds only to `127.0.0.1`; no shared-bind option exists.
+- Every GUI path must be relative to the configured root and each component is rejected if it is a symlink.
+- The GUI serves server-rendered HTML without JavaScript and escapes all source-derived values.
+- Responses use restrictive CSP, frame denial, nosniff, no-referrer, and no-store headers.
+- Unknown routes return 404 and no static-file handler is exposed.
+- Coverage files are limited to 10 MiB and validated before normalization.
+- Test generation and golden comparison do not execute project code.
+
+- Every GUI request requires a cryptographically random per-launch token and an allowed loopback Host header, mitigating DNS rebinding.
+- Coverage gates require a valid evidence manifest and verified current source hashes; canonical paths prevent alias-weighted denominators.
+- Golden comparison binds checks, comparison, and hashes to bounded opened file descriptors.
