@@ -1,13 +1,9 @@
 from __future__ import annotations
-
 import hashlib
 import json
 from pathlib import Path
 from typing import Any
-
 from .copybook import Field, parse_copybook, record_length
-
-
 def _rows(nodes: list[Field], prefix: str = "") -> dict[str, dict[str, Any]]:
     rows: dict[str, dict[str, Any]] = {}
     for node in nodes:
@@ -29,8 +25,6 @@ def _rows(nodes: list[Field], prefix: str = "") -> dict[str, dict[str, Any]]:
         }
         rows.update(_rows(node.children, path))
     return rows
-
-
 def compare_copybooks(before: Path, after: Path) -> dict[str, Any]:
     before = before.resolve()
     after = after.resolve()

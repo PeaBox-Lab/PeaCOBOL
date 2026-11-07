@@ -1,13 +1,10 @@
 from __future__ import annotations
-
 import re
 from dataclasses import asdict
 from pathlib import Path
 from typing import Any
-
 from .copybook import parse_copybook
 from .core import Finding, SOURCE_SUFFIXES, _safe_files, scan_project
-
 PROGRAM_ID_RE = re.compile(r"\bPROGRAM-ID\.?\s+([A-Z0-9-]+)", re.I)
 COPY_RE = re.compile(r"\bCOPY\s+([A-Z0-9_-]+)", re.I)
 CALL_RE = re.compile(r"\bCALL\s+['\"]([^'\"]+)['\"]", re.I)
@@ -22,8 +19,6 @@ ACCEPT_RE = re.compile(r"\bACCEPT\s+(.+?)(?:\s+FROM\b|$)", re.I)
 WRITE_RE = re.compile(r"\b(?:MOVE\s+.+?\s+TO|COMPUTE|ADD\s+.+?\s+TO|SUBTRACT\s+.+?\s+FROM|MULTIPLY\s+.+?\s+BY|DIVIDE\s+.+?\s+INTO|ACCEPT)\s+([A-Z][A-Z0-9-]*)", re.I)
 KEYWORDS = {"MOVE", "TO", "FROM", "BY", "INTO", "GIVING", "COMPUTE", "ADD", "SUBTRACT", "MULTIPLY", "DIVIDE", "CALL", "PERFORM", "GO", "IF", "ELSE", "END-IF", "DISPLAY", "ACCEPT", "READ", "WRITE", "REWRITE", "DELETE", "OPEN", "CLOSE", "STOP", "RUN", "GOBACK", "VALUE", "ZERO", "ZEROS", "SPACE", "SPACES", "OF", "IN", "ROUNDED"}
 SEVERITY_RANK = {"none": -1, "critical": 0, "high": 1, "medium": 2, "low": 3}
-
-
 def _code_lines(path: Path) -> list[tuple[int, str]]:
     result = []
     for number, raw in enumerate(path.read_text(encoding="utf-8", errors="replace").splitlines(), 1):
@@ -32,8 +27,6 @@ def _code_lines(path: Path) -> list[tuple[int, str]]:
         code = raw[6:] if len(raw) >= 7 and raw[:6].strip().isdigit() else raw
         result.append((number, code))
     return result
-
-
 def _field_layouts(root: Path) -> dict[str, list[dict[str, int]]]:
     layouts: dict[str, list[dict[str, int]]] = {}
     aliases: dict[str, list[tuple[str, dict[str, int]]]] = {}
@@ -54,8 +47,6 @@ def _field_layouts(root: Path) -> dict[str, list[dict[str, int]]]:
         if len(canonical_names) == 1:
             layouts[alias] = [value for _, value in definitions]
     return layouts
-
-
 def _program_graph(root: Path, programs: list[Path]) -> dict[str, Any]:
     identities: dict[Path, str] = {}
     for path in programs:
@@ -71,8 +62,6 @@ def _program_graph(root: Path, programs: list[Path]) -> dict[str, Any]:
                 target = target.upper()
                 edges.append({"from": identities[path], "to": target, "file": rel, "line": number, "resolved": target in known})
     return {"nodes": [{"id": identities[path], "file": path.relative_to(root).as_posix()} for path in programs], "edges": edges}
-
-
 def _copy_graph(root: Path, files: list[Path]) -> dict[str, Any]:
     copybooks = [path for path in files if path.suffix.lower() == ".cpy"]
     by_name = {path.stem.upper(): path.relative_to(root).as_posix() for path in copybooks}
@@ -84,8 +73,6 @@ def _copy_graph(root: Path, files: list[Path]) -> dict[str, Any]:
                 key = name.upper()
                 edges.append({"from": rel, "copybook": key, "to": by_name.get(key), "line": number, "resolved": key in by_name})
     return {"nodes": sorted(by_name.values()), "edges": edges}
-
-
 def _data_references(text: str) -> tuple[list[str], list[str]]:
     references: list[str] = []
     indexes: list[str] = []
@@ -109,8 +96,6 @@ def _data_references(text: str) -> tuple[list[str], list[str]]:
             position += 2
         references.append(" OF ".join(parts))
     return references, indexes
-
-
 def _goto_targets(code: str) -> tuple[list[str], bool]:
     match = GOTO_RE.search(code)
     if not match:
@@ -119,8 +104,6 @@ def _goto_targets(code: str) -> tuple[list[str], bool]:
     parts = re.split(r"\s+DEPENDING\s+ON\s+", tail, maxsplit=1, flags=re.I)
     targets = [name.upper() for name in IDENT_RE.findall(parts[0]) if name.upper() not in KEYWORDS]
     return targets, len(parts) == 2
-
-
 def _access_and_flow(root: Path, programs: list[Path], layouts: dict[str, list[dict[str, int]]]) -> tuple[list[dict], list[dict], list[dict], list[Finding]]:
     access: list[dict] = []
     controls: list[dict] = []
@@ -230,8 +213,6 @@ def _access_and_flow(root: Path, programs: list[Path], layouts: dict[str, list[d
             if stripped.endswith("."):
                 conditional_depth = 0
     return access, controls, flows, findings
-
-
 def analyze_assurance(root: Path, fail_on: str = "none") -> dict[str, Any]:
     root = root.resolve()
     if fail_on not in SEVERITY_RANK:

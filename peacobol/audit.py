@@ -6,18 +6,11 @@ from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
-
 GENESIS = "0" * 64
-
-
 def _canonical(value: dict[str, Any]) -> bytes:
     return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
-
-
 def _absolute(path: Path) -> Path:
     return Path(os.path.abspath(os.fspath(path)))
-
-
 def _reject_symlink_components(path: Path) -> None:
     path = _absolute(path)
     current = Path(path.anchor)
@@ -25,15 +18,11 @@ def _reject_symlink_components(path: Path) -> None:
         current = current / part
         if current.is_symlink():
             raise ValueError(f"Audit path may not contain symlinks: {path}")
-
-
 def _open_text(path: Path, flags: int):
     nofollow = getattr(os, "O_NOFOLLOW", 0)
     descriptor = os.open(path, flags | nofollow, 0o600)
     mode = "a" if flags & os.O_APPEND else "r"
     return os.fdopen(descriptor, mode, encoding="utf-8", newline="\n")
-
-
 @contextmanager
 def _exclusive_lock(path: Path):
     lock_path = path.with_name(path.name + ".lock")
@@ -61,8 +50,6 @@ def _exclusive_lock(path: Path):
                 fcntl.flock(descriptor, fcntl.LOCK_UN)
         finally:
             os.close(descriptor)
-
-
 def _last_hash(path: Path) -> str:
     _reject_symlink_components(path)
     if not path.exists() or path.stat().st_size == 0:
@@ -75,8 +62,6 @@ def _last_hash(path: Path) -> str:
     if not last:
         return GENESIS
     return json.loads(last)["event_hash"]
-
-
 def append_event(path: Path, action: str, subject: str, outcome: str, details: dict[str, Any] | None = None) -> dict[str, Any]:
     path = _absolute(path)
     _reject_symlink_components(path.parent)
@@ -99,8 +84,6 @@ def append_event(path: Path, action: str, subject: str, outcome: str, details: d
             handle.flush()
             os.fsync(handle.fileno())
         return event
-
-
 def verify_log(path: Path) -> dict[str, Any]:
     path = _absolute(path)
     try:

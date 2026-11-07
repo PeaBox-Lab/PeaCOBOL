@@ -1,30 +1,31 @@
-# PeaCOBOL 0.6.0 Release Notes
+# PeaCOBOL 0.7.0 Release Notes
 
 ## Release theme
 
-**Test Workbench and GUI**
+**Enterprise Integration Foundations**
 
-This release makes PeaCOBOL's local analysis workflows accessible through both automation-safe CLI commands and a secure multi-workbench browser interface.
+This release adds static enterprise inventories, guarded offline integration plans, supply-chain evidence, and one-click GUI launchers while deliberately keeping remote submission outside the application.
 
 ## Delivered
 
-- Copybook-driven boundary and invalid record generation.
-- COBOL Check-compatible starter generation.
-- Golden-master binary comparison with first-difference location and hashes.
-- Coverage import, evidence linkage, integrity hashing, and minimum threshold gates.
-- A seven-workbench loopback GUI for scanning, assurance, diagnostics, impact, tests, golden comparison, and coverage.
-- Server-rendered, script-free pages with root containment, symlink rejection, strict loopback Host validation, a random per-launch token, CSP, no-referrer, nosniff, frame protection, and no-store caching.
-- CLI commands `test-cases`, `golden`, and `coverage`.
+- Db2 DDL/copybook compatibility analysis and incompatibility gate.
+- Db2, CICS, and MQ resource inventories.
+- HTTPS, role, allow-list, and vault-reference validation for dry-run Zowe/zOSMF submission plans.
+- CycloneDX-style SBOM output.
+- In-toto-style local attestations with optional strong HMAC signing and verification.
+- Reproducible content-addressed evidence archives.
+- Dry-run retention planning.
+- Enterprise resource, DB2, and SBOM GUI workbenches.
+- Windows `start.bat`, native Linux `start-linux.sh`, and WSL `start-linux.bat` launchers.
 
 ## Validation summary
 
-- 92 automated tests pass: 69 retained regression tests and 23 new 0.6.0 tests.
-- Python source compilation passes.
-- GUI tests run a live loopback server and validate navigation, workbench output, security headers, traversal rejection, symlink rejection, and 404 behavior.
-- Test Workbench tests cover generated records, starter output, golden differences, coverage normalization, invalid input, and deterministic malformed-copybook robustness.
-- End-to-end CLI validation covers all three new commands and their gate exit semantics.
-- Independent certification found no significant remaining issues after review-driven parser, coverage, golden-comparison, signed-boundary, and GUI security fixes.
+- 105 automated tests pass: 92 retained tests and 13 new 0.7.0 tests.
+- Python source compilation and Linux launcher syntax checks pass.
+- Tests cover DB2 compatibility, resource inventories, guarded submission plans, SBOM, attestations, immutable exports, retention plans, launchers, and enterprise GUI views.
+- End-to-end CLI validation covers incompatibility gates, inventory hashes, submission dry-runs, supply-chain output, and archive integrity.
+- Independent security review found no vulnerabilities, and correctness certification found no significant issues after remediation.
 
 ## Boundary
 
-The GUI is intentionally unauthenticated and loopback-only. Do not expose it through shared bindings, reverse proxies, tunnels, or port forwarding.
+No enterprise network connection or mainframe job submission is performed. All enterprise features in this release are local analysis, evidence, or validation plans.

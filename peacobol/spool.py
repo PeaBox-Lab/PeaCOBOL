@@ -1,19 +1,14 @@
 from __future__ import annotations
-
 import re
 from pathlib import Path
 from typing import Any
-
 from .diagnostics import normalize_diagnostics
-
 MAX_SPOOL_BYTES = 10 * 1024 * 1024
 STEP_RE = re.compile(r"(?:IEF142I\s+\S+\s+|STEP[=\s:]+)(?P<step>[A-Z0-9#$@-]{1,16}).*?(?:RC|CC|RETURN\s+CODE|COND(?:ITION)?\s+CODE)[=\s:]+(?P<rc>\d{1,4})", re.I)
 COND_RE = re.compile(r"(?:MAXCC|RETURN\s+CODE|CONDITION\s+CODE|RC)[=\s:]+(?P<rc>\d{1,4})", re.I)
 ABEND_RE = re.compile(r"\b(?:ABEND(?:ED)?(?:\s+CODE)?[=\s:]+|SYSTEM\s+COMPLETION\s+CODE[=\s:]+)(?P<code>[A-Z0-9-]{2,16})\b", re.I)
 FILE_STATUS_RE = re.compile(r"\b(?:FILE[- ]?STATUS|FS)[=\s:]+(?P<code>[A-Z0-9]{2})\b", re.I)
 SOURCE_RE = re.compile(r"\b(?P<file>[A-Za-z0-9_./\\-]+\.(?:cbl|cob|cpy))(?::|\s+LINE[=\s:]+)(?P<line>\d+)\b", re.I)
-
-
 def read_spool(path: Path) -> tuple[bytes, str]:
     if path.is_symlink():
         raise FileNotFoundError(f"Spool file not found: {path}")
@@ -24,8 +19,6 @@ def read_spool(path: Path) -> tuple[bytes, str]:
         raise ValueError(f"Spool input exceeds {MAX_SPOOL_BYTES} bytes")
     data = path.read_bytes()
     return data, data.decode("utf-8", errors="replace")
-
-
 def parse_spool(text: str) -> dict[str, Any]:
     encoded = text.encode("utf-8")
     if len(encoded) > MAX_SPOOL_BYTES:

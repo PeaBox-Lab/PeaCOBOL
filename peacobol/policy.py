@@ -1,8 +1,5 @@
 from __future__ import annotations
-
 from typing import Any
-
-
 def evaluate_policy(profile: dict[str, Any], scan: dict[str, Any] | None = None, build: dict[str, Any] | None = None, evidence: dict[str, Any] | None = None) -> dict[str, Any]:
     policy = profile["policy"]
     checks: list[dict[str, Any]] = []

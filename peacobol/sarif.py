@@ -1,10 +1,6 @@
 from __future__ import annotations
-
 from typing import Any
-
 LEVELS = {"critical": "error", "high": "error", "medium": "warning", "low": "note"}
-
-
 def to_sarif(report: dict[str, Any]) -> dict[str, Any]:
     findings = report.get("findings", [])
     rules: dict[str, dict[str, Any]] = {}

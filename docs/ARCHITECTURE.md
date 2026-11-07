@@ -1,13 +1,15 @@
 # Architecture
 
-PeaCOBOL 0.6.0 adds a testing and presentation layer while preserving the prior deterministic engines:
+PeaCOBOL 0.7.0 adds an offline enterprise and supply-chain layer:
 
-1. **Copybook test generator** creates bounded record variants directly from computed field layout and representation.
-2. **Golden comparator** performs byte-level equality, first-difference detection, and integrity hashing without executing tested programs.
-3. **Coverage importer** validates bounded JSON line coverage, normalizes paths and counts, links an optional evidence hash, and computes a coverage hash.
-4. **GUI controller** maps seven read-oriented workbenches to existing analysis functions through server-rendered HTML.
-5. **Path boundary** resolves only non-symlinked relative files and directories beneath the configured GUI root.
-6. **Browser boundary** uses loopback binding, no scripts, restrictive CSP, no-store caching, no-referrer, nosniff, and frame denial.
-7. **Existing assurance, diagnostics, impact, build, evidence, and audit engines** remain reusable by both CLI and GUI.
+1. **Db2 compatibility engine** compares local DDL columns with computed COBOL field representation.
+2. **Resource inventory engine** extracts Db2 object references, CICS commands/resources, and MQ API calls with locations.
+3. **Submission-plan validator** verifies a local HTTPS allow-list, target enablement, role membership, vault credential reference, JCL containment, and hashes—but has no network client.
+4. **SBOM engine** inventories bounded project files and hashes their contents.
+5. **Attestation engine** creates in-toto-style statements and optionally applies strong environment-provided HMAC integrity.
+6. **Immutable-export engine** creates reproducible content-addressed archives with normalized metadata.
+7. **Retention planner** identifies age-based candidates without deleting anything.
+8. **GUI presentation layer** exposes enterprise inventory, DB2 checks, and SBOM alongside the existing seven workbenches.
+9. **Launcher layer** starts the existing token-protected loopback GUI without installing dependencies.
 
-The GUI does not provide remote submission, arbitrary commands, source editing, authentication, or shared binding.
+Remote submission, credential retrieval, and public-key signing remain outside this trust boundary.

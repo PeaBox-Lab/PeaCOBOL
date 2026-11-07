@@ -9,6 +9,7 @@ from .assurance import analyze_assurance
 from .audit import append_event, verify_log
 from .copybook import parse_copybook, record_length
 from .coverage import import_coverage
+from .enterprise import db2_compatibility, resource_inventory, submission_plan
 from .impact import compare_copybooks
 from .core import build, create_project, doctor, evidence, scan_project
 from .investigation import diagnose, failure_bundle
@@ -19,15 +20,14 @@ from .profiles import list_profiles, load_profile, resolve_profile_name
 from .records import convert_records, decode_record, hex_view
 from .sarif import to_sarif
 from .spool import read_spool
+from .supplychain import attest, immutable_export, retention_plan, sbom, verify_attestation
 from .testworkbench import cobol_check_stub, compare_golden, generate_cases
-
 def _atomic_write(path: Path, data: str) -> None:
     path = path.resolve()
     path.parent.mkdir(parents=True, exist_ok=True)
     temp = path.with_name(path.name + ".tmp")
     temp.write_text(data, encoding="utf-8", newline="\n")
     temp.replace(path)
-
 def emit(value: Any, output: str | None = None) -> None:
     data = json.dumps(value, indent=2, ensure_ascii=False) + "\n"
     if output:
@@ -35,12 +35,10 @@ def emit(value: Any, output: str | None = None) -> None:
         print(output)
     else:
         print(data, end="")
-
 def _subject(args: argparse.Namespace) -> Path:
     raw = getattr(args, "path", None) or getattr(args, "project", None) or getattr(args, "file", None) or getattr(args, "copybook", None) or "."
     value = Path(raw).resolve()
     return value if value.is_dir() else value.parent
-
 def _audit_path(args: argparse.Namespace) -> Path:
     if args.audit_log:
         return Path(args.audit_log)
@@ -48,10 +46,8 @@ def _audit_path(args: argparse.Namespace) -> Path:
     if env:
         return Path(env)
     return _subject(args) / ".peacobol" / "audit.jsonl"
-
 def _add_profile(parser: argparse.ArgumentParser, default: str | None = None) -> None:
     parser.add_argument("--profile", default=None, choices=("development", "release", "banking", "aerospace"))
-
 def parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="peacobol", description="Local-first COBOL data, development and assurance toolkit")
     p.add_argument("--audit-log", help="Override the hash-chained local audit log path")
@@ -78,17 +74,21 @@ def parser() -> argparse.ArgumentParser:
     x = sub.add_parser("test-cases", help="Generate boundary and invalid records from a copybook"); x.add_argument("copybook"); x.add_argument("--encoding", choices=("ascii", "utf-8", "cp037", "cp500"), default="ascii"); x.add_argument("--byteorder", choices=("big", "little"), default="big"); x.add_argument("--unsigned", action="store_true"); x.add_argument("--cobol-check-program"); x.add_argument("-o", "--output")
     x = sub.add_parser("golden", help="Compare actual and expected binary outputs"); x.add_argument("actual"); x.add_argument("expected"); x.add_argument("--fail-on-difference", action="store_true"); x.add_argument("-o", "--output")
     x = sub.add_parser("coverage", help="Import normalized JSON line coverage"); x.add_argument("file"); x.add_argument("--evidence-manifest"); x.add_argument("--project"); x.add_argument("--minimum", type=float); x.add_argument("-o", "--output")
+    x = sub.add_parser("db2-check", help="Compare copybook fields with DB2 DDL columns"); x.add_argument("copybook"); x.add_argument("ddl"); x.add_argument("--fail-on-incompatible", action="store_true"); x.add_argument("-o", "--output")
+    x = sub.add_parser("resources", help="Inventory DB2, CICS and MQ references"); x.add_argument("path", nargs="?", default="."); x.add_argument("-o", "--output")
+    x = sub.add_parser("submission-plan", help="Validate an offline Zowe or zOSMF submission plan"); x.add_argument("path", nargs="?", default="."); x.add_argument("jcl"); x.add_argument("--system", required=True); x.add_argument("--allowlist", required=True); x.add_argument("--role", required=True); x.add_argument("--credential-reference", required=True); x.add_argument("-o", "--output")
+    x = sub.add_parser("sbom", help="Create an offline CycloneDX-style software inventory"); x.add_argument("path", nargs="?", default="."); x.add_argument("-o", "--output")
+    x = sub.add_parser("attest", help="Create a local in-toto-style attestation"); x.add_argument("file"); x.add_argument("--verify", action="store_true"); x.add_argument("-o", "--output")
+    x = sub.add_parser("immutable-export", help="Create a content-addressed evidence archive"); x.add_argument("files", nargs="+"); x.add_argument("-o", "--output", required=True)
+    x = sub.add_parser("retention-plan", help="Create a dry-run retention plan"); x.add_argument("directory"); x.add_argument("--days", type=int, required=True); x.add_argument("-o", "--output")
     return p
-
 def _select_profile(args: argparse.Namespace, root: Path, fallback: str) -> str:
     selected = resolve_profile_name(root, args.profile, fallback)
     args.profile = selected
     return selected
-
 def _profile_data(args: argparse.Namespace) -> dict[str, Any]:
     root = Path(args.project)
     return load_profile(root, _select_profile(args, root, "development"))["data"]
-
 def dispatch(args: argparse.Namespace) -> Any:
     if args.cmd == "init":
         return create_project(Path(args.path), args.name or Path(args.path).name)
@@ -176,21 +176,43 @@ def dispatch(args: argparse.Namespace) -> Any:
         report["gate"] = {"minimum": args.minimum, "ok": passed}
         report["ok"] = passed
         return report
+    if args.cmd == "db2-check":
+        report = db2_compatibility(Path(args.copybook), Path(args.ddl))
+        report["gate"] = {"fail_on_incompatible": args.fail_on_incompatible, "ok": report["ok"] or not args.fail_on_incompatible}
+        report["ok"] = report["gate"]["ok"]
+        return report
+    if args.cmd == "resources":
+        return resource_inventory(Path(args.path))
+    if args.cmd == "submission-plan":
+        return submission_plan(Path(args.path), Path(args.jcl), args.system, Path(args.allowlist), args.role, args.credential_reference)
+    if args.cmd == "sbom":
+        return sbom(Path(args.path))
+    if args.cmd == "attest":
+        if args.verify:
+            envelope = json.loads(Path(args.file).read_text(encoding="utf-8"))
+            return verify_attestation(envelope)
+        return attest(Path(args.file))
+    if args.cmd == "immutable-export":
+        return immutable_export([Path(value) for value in args.files], Path(args.output))
+    if args.cmd == "retention-plan":
+        return retention_plan(Path(args.directory), args.days)
     raise ValueError(f"Unknown command: {args.cmd}")
-
 def main(argv: list[str] | None = None) -> int:
     args = parser().parse_args(argv)
     output = getattr(args, "output", None)
     try:
         result = dispatch(args)
-        if args.cmd not in ("convert", "jcl"):
+        if args.cmd not in ("convert", "jcl", "immutable-export"):
             emit(result, output)
+        elif args.cmd == "immutable-export":
+            emit(result)
         if not args.no_audit:
             append_event(_audit_path(args), args.cmd, str(_subject(args)), "success", {"output": output, "ok": result.get("ok") if isinstance(result, dict) else None, "profile": getattr(args, "profile", None)})
         gate_ok = result.get("ok", True)
         if args.cmd == "assure" and args.format == "sarif":
             gate_ok = result["runs"][0].get("properties", {}).get("gate", {}).get("ok", True)
-        return 3 if args.cmd in ("gate", "assure", "impact", "golden", "coverage") and not gate_ok else 0
+        verification_command = args.cmd == "attest" and getattr(args, "verify", False)
+        return 3 if (args.cmd in ("gate", "assure", "impact", "golden", "coverage", "db2-check") or verification_command) and not gate_ok else 0
     except Exception as exc:
         if not args.no_audit:
             try:

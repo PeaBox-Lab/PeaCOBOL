@@ -1,71 +1,116 @@
-# PeaCOBOL 0.6.0
+# PeaCOBOL 0.7.0
 
-PeaCOBOL is a local-first COBOL data, development, diagnostics, assurance, change-impact, and testing toolkit. Version 0.6.0 is the **Test Workbench and GUI** release.
+PeaCOBOL is a local-first COBOL data, development, diagnostics, assurance, testing, and enterprise-inventory toolkit. Version 0.7.0 is the **Enterprise Integration Foundations** release.
 
-## New Test Workbench
+## Easy start
 
-- Copybook-driven typical, minimum, maximum, and invalid fixed-record cases
-- Deterministic record hex, decoded value intent, source hash, and cases hash
-- COBOL Check-compatible starter program generation
-- Byte-for-byte golden-master comparison with hashes and first-difference offset
-- Normalized JSON line-coverage import, evidence linkage, integrity hash, and minimum-coverage gate
-- Deterministic malformed-copybook robustness tests
+### Windows
 
-## New GUI interface
+Double-click:
 
-Launch the loopback-only interface:
-
-```bash
-peacobol-ui --root /path/to/approved/projects
+```text
+start.bat
 ```
 
-Open the tokenized URL printed at startup, such as `http://127.0.0.1:8765/?token=<random-session-token>`. Every request requires that launch token and a loopback `Host` header. The GUI provides seven workbenches:
+The launcher finds Python 3.10+, starts the secure loopback GUI, and opens the one-time bootstrap page in your default browser. Keep the command window open; press `Ctrl+C` to stop.
 
-1. **Scan** — project inventory and baseline findings
-2. **Assurance** — graphs, field inventories, findings, and severity gates
-3. **Diagnostics** — spool analysis, source context, and investigation checklist
-4. **Change impact** — field-level copybook comparison
-5. **Test cases** — generated records and COBOL Check-compatible starter text
-6. **Golden compare** — binary regression comparison
-7. **Coverage** — coverage summary, evidence linkage, and integrity details
+### Linux
 
-All user paths are relative to the administrator-selected root. Absolute paths, traversal, and symlink paths are rejected. The GUI binds only to `127.0.0.1`, uses server-rendered HTML with no scripts, sends a restrictive Content Security Policy, prevents framing and referrer leakage, and disables browser caching.
-
-## CLI examples
-
-Generate test cases:
+Run:
 
 ```bash
-peacobol test-cases copybooks/ACCOUNT.cpy --cobol-check-program PAYMENT -o cases.json
+chmod +x start-linux.sh
+./start-linux.sh
 ```
 
-Compare golden outputs:
+### Linux through Windows Subsystem for Linux
+
+Double-click:
+
+```text
+start-linux.bat
+```
+
+This compatibility launcher invokes `start-linux.sh` through WSL. The launchers do not install packages, contact the internet, or modify the project.
+
+## New enterprise foundations
+
+- Db2 DDL-to-copybook compatibility checks with field-level reasons and gates
+- Db2, CICS, and MQ resource inventories with source locations and integrity hashes
+- Offline Zowe/zOSMF submission-plan validation using HTTPS allow-lists, RBAC roles, and `vault://` credential references
+- CycloneDX-style offline SBOM with file hashes
+- In-toto-style local attestations with optional strong HMAC-SHA256 signing through `PEACOBOL_ATTESTATION_KEY`
+- Reproducible, content-addressed evidence archives
+- Dry-run retention plans that never delete files
+- Three new GUI workbenches: Enterprise resources, DB2 compatibility, and SBOM
+
+## Enterprise CLI examples
+
+Check a DB2 schema:
 
 ```bash
-peacobol golden actual.dat expected.dat --fail-on-difference -o golden.json
+peacobol db2-check copybooks/ACCOUNT.cpy schema.sql --fail-on-incompatible -o db2-report.json
 ```
 
-Import coverage and require at least 85%:
+Inventory enterprise references:
 
 ```bash
-peacobol coverage coverage.json --evidence-manifest reports/evidence.json --project . --minimum 85 -o coverage-report.json
+peacobol resources . -o resource-inventory.json
 ```
 
-A failed golden or coverage gate exits with status 3.
+Create a validated submission plan without submitting anything:
 
-## Coverage input
+```bash
+peacobol submission-plan . JOB.jcl \
+  --system DEV \
+  --allowlist config/submission-allowlist.json \
+  --role developer \
+  --credential-reference vault://mainframe/dev \
+  -o submission-plan.json
+```
 
-Coverage import accepts bounded JSON in this shape:
+The allow-list format is:
 
 ```json
 {
-  "lines": [
-    {"file": "src/PAYMENT.cbl", "line": 10, "hits": 3},
-    {"file": "src/PAYMENT.cbl", "line": 11, "hits": 0}
-  ]
+  "systems": {
+    "DEV": {
+      "enabled": true,
+      "url": "https://zos.example.com",
+      "roles": ["developer", "release-manager"]
+    }
+  }
 }
 ```
 
+PeaCOBOL 0.7.0 only creates a **dry-run plan**. It does not perform a network request or submit a job.
+
+Create supply-chain evidence:
+
+```bash
+peacobol sbom . -o sbom.json
+peacobol attest PeaCOBOL-0.7.0.zip -o attestation.json
+peacobol immutable-export reports/evidence.json sbom.json attestation.json -o evidence.tar.gz
+peacobol retention-plan reports --days 90 -o retention-plan.json
+```
+
+For a keyed local attestation, set `PEACOBOL_ATTESTATION_KEY` to a secret of at least 32 bytes. The key is read from the environment and is never written to output.
+
+## GUI
+
+The loopback GUI exchanges a one-time launch token for an HttpOnly, SameSite session cookie and then removes the token from navigation URLs. It has ten workbenches:
+
+1. Scan
+2. Assurance
+3. Diagnostics
+4. Change impact
+5. Test cases
+6. Golden compare
+7. Coverage
+8. Enterprise resources
+9. DB2 compatibility
+10. SBOM
+
 ## Boundaries
 
-Generated test cases are structural boundary aids, not complete business-rule tests. The COBOL Check output is a starter program and does not invoke or bundle COBOL Check. Coverage gates verify the evidence manifest and current project hashes, derive the denominator from verified nonblank source lines, and do not execute source code. The GUI has no authentication and must remain loopback-only.
+This release does not connect to Db2, CICS, MQ, Zowe, or z/OSMF. Inventories and compatibility checks are static local analysis. Submission plans are validation-only. HMAC attestations provide shared-secret integrity, not public-key release signing. Production submission still requires an approved integration service, TLS trust, RBAC, a vault, independent review, and representative estate validation.

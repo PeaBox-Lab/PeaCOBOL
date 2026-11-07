@@ -1,13 +1,10 @@
 from __future__ import annotations
-
 import copy
 import json
 import re
 from pathlib import Path
 from typing import Any
-
 PROFILE_SCHEMA = "peacobol-profile-1"
-
 BUILTIN_PROFILES: dict[str, dict[str, Any]] = {
     "development": {
         "description": "Fast local feedback with portable defaults.",
@@ -38,8 +35,6 @@ BUILTIN_PROFILES: dict[str, dict[str, Any]] = {
         "jcl": {"compiler": "IGYCRCTL", "linker": "IEWL", "compiler_library": "IGY.V6R4M0.SIGYCOMP", "runtime": "CEE.RUNLIB.LOAD", "compiler_parms": ["LIB", "OBJECT", "RENT", "SSRANGE", "NUMCHECK", "INITCHECK"]},
     },
 }
-
-
 def _merge(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]:
     result = copy.deepcopy(base)
     for key, value in override.items():
@@ -48,8 +43,6 @@ def _merge(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]:
         else:
             result[key] = copy.deepcopy(value)
     return result
-
-
 def _validate(name: str, profile: dict[str, Any]) -> None:
     compiler = profile.get("compiler", {})
     flags = compiler.get("flags")
@@ -83,8 +76,6 @@ def _validate(name: str, profile: dict[str, Any]) -> None:
     parms = jcl.get("compiler_parms")
     if not isinstance(parms, list) or not parms or any(not isinstance(value, str) or not option.fullmatch(value.upper()) for value in parms):
         raise ValueError(f"Profile {name!r} has invalid JCL compiler parameters")
-
-
 def load_profile(root: Path | None = None, name: str = "development") -> dict[str, Any]:
     if name not in BUILTIN_PROFILES:
         raise ValueError(f"Unknown build profile: {name}. Available: {', '.join(sorted(BUILTIN_PROFILES))}")
@@ -111,8 +102,6 @@ def load_profile(root: Path | None = None, name: str = "development") -> dict[st
             raise ValueError(f"Profile {name!r} may not disable {control}")
     _validate(name, profile)
     return {"schema": PROFILE_SCHEMA, "name": name, "source": source, **profile}
-
-
 def resolve_profile_name(root: Path | None, requested: str | None, fallback: str) -> str:
     if requested:
         return requested
@@ -126,8 +115,6 @@ def resolve_profile_name(root: Path | None, requested: str | None, fallback: str
                     raise ValueError(f"Unknown default profile: {selected}")
                 return selected
     return fallback
-
-
 def list_profiles(root: Path | None = None) -> dict[str, Any]:
     return {
         "schema": "peacobol-profile-list-1",

@@ -4,20 +4,15 @@ import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
-
 from peacobol.assurance import analyze_assurance
 from peacobol.audit import append_event, verify_log
 from peacobol.core import build
 from peacobol.impact import compare_copybooks
 from peacobol.profiles import load_profile
 from peacobol.sarif import to_sarif
-
-
 def _audit_worker(path, count):
     for index in range(count):
         append_event(Path(path), "worker", str(index), "success")
-
-
 class AssuranceTests(unittest.TestCase):
     def _project(self, directory):
         root = Path(directory)
@@ -43,7 +38,6 @@ class AssuranceTests(unittest.TestCase):
 """, encoding="utf-8")
         (root / "src" / "SUB.cbl").write_text("       IDENTIFICATION DIVISION.\n       PROGRAM-ID. SUBPROG.\n       PROCEDURE DIVISION.\n           GOBACK.\n", encoding="utf-8")
         return root
-
     def test_graphs_access_flow_and_rules(self):
         with tempfile.TemporaryDirectory() as directory:
             report = analyze_assurance(self._project(directory))
@@ -54,17 +48,14 @@ class AssuranceTests(unittest.TestCase):
             self.assertTrue(any(item["type"] == "perform" for item in report["control_flow"]))
             rules = {item["rule"] for item in report["findings"]}
             self.assertTrue({"PC501", "PC502", "PC504"}.issubset(rules))
-
     def test_severity_gate_blocks_at_high(self):
         with tempfile.TemporaryDirectory() as directory:
             report = analyze_assurance(self._project(directory), "high")
             self.assertFalse(report["ok"])
             self.assertGreater(report["gate"]["blocked_findings"], 0)
-
     def test_none_gate_always_passes(self):
         with tempfile.TemporaryDirectory() as directory:
             self.assertTrue(analyze_assurance(self._project(directory), "none")["ok"])
-
     def test_move_tracks_all_destinations(self):
         with tempfile.TemporaryDirectory() as directory:
             root = self._project(directory)
@@ -75,7 +66,6 @@ class AssuranceTests(unittest.TestCase):
             self.assertTrue({"SMALL", "ITEMS"}.issubset(writes))
             truncation_targets = {item["message"].split()[-1].rstrip(".") for item in report["findings"] if item["rule"] == "PC502"}
             self.assertTrue({"SMALL", "ITEMS"}.issubset(truncation_targets))
-
     def test_safe_constant_subscript_is_not_flagged(self):
         with tempfile.TemporaryDirectory() as directory:
             root = self._project(directory)
@@ -83,7 +73,6 @@ class AssuranceTests(unittest.TestCase):
             path.write_text(path.read_text(encoding="utf-8").replace("ITEMS(WS-IDX)", "ITEMS(2)"), encoding="utf-8")
             report = analyze_assurance(root)
             self.assertFalse(any(item["rule"] == "PC501" for item in report["findings"]))
-
     def test_trusted_overwrite_kills_taint(self):
         with tempfile.TemporaryDirectory() as directory:
             root = self._project(directory)
@@ -92,7 +81,6 @@ class AssuranceTests(unittest.TestCase):
             path.write_text(text, encoding="utf-8")
             report = analyze_assurance(root)
             self.assertFalse(any(item["rule"] == "PC503" for item in report["findings"]))
-
     def test_unconditional_transfer_suppresses_fallthrough(self):
         with tempfile.TemporaryDirectory() as directory:
             root = self._project(directory)
@@ -101,7 +89,6 @@ class AssuranceTests(unittest.TestCase):
             path.write_text(text, encoding="utf-8")
             report = analyze_assurance(root)
             self.assertFalse(any(item["type"] == "fallthrough" and item["from"] == "START-PARA" and item["to"] == "MID-PARA" for item in report["control_flow"]))
-
     def test_conditional_overwrite_does_not_kill_taint(self):
         with tempfile.TemporaryDirectory() as directory:
             root = self._project(directory)
@@ -110,7 +97,6 @@ class AssuranceTests(unittest.TestCase):
             path.write_text(text, encoding="utf-8")
             report = analyze_assurance(root)
             self.assertTrue(any(item["rule"] == "PC503" for item in report["findings"]))
-
     def test_destination_indexes_are_reads_not_writes(self):
         with tempfile.TemporaryDirectory() as directory:
             root = self._project(directory)
@@ -121,7 +107,6 @@ class AssuranceTests(unittest.TestCase):
             self.assertTrue(any(item["field"] == "ITEMS" and item["mode"] == "write" for item in report["field_access"]))
             self.assertTrue(any(item["field"] == "WS-IDX" and item["mode"] == "read" for item in report["field_access"]))
             self.assertFalse(any(item["field"] == "WS-IDX" and item["mode"] == "write" for item in report["field_access"]))
-
     def test_computed_goto_preserves_fallthrough(self):
         with tempfile.TemporaryDirectory() as directory:
             root = self._project(directory)
@@ -130,7 +115,6 @@ class AssuranceTests(unittest.TestCase):
             path.write_text(text, encoding="utf-8")
             report = analyze_assurance(root)
             self.assertTrue(any(item["type"] == "fallthrough" and item["from"] == "START-PARA" and item["to"] == "MID-PARA" for item in report["control_flow"]))
-
     def test_conditional_goto_preserves_fallthrough(self):
         with tempfile.TemporaryDirectory() as directory:
             root = self._project(directory)
@@ -139,7 +123,6 @@ class AssuranceTests(unittest.TestCase):
             path.write_text(text, encoding="utf-8")
             report = analyze_assurance(root)
             self.assertTrue(any(item["type"] == "fallthrough" and item["from"] == "START-PARA" and item["to"] == "MID-PARA" for item in report["control_flow"]))
-
     def test_qualified_fields_keep_distinct_identity(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory); (root / "src").mkdir(); (root / "copybooks").mkdir()
@@ -150,7 +133,6 @@ class AssuranceTests(unittest.TestCase):
             self.assertIn("STATUS OF INPUT-REC", fields)
             self.assertIn("STATUS OF OUTPUT-REC", fields)
             self.assertTrue(any(item["rule"] == "PC502" and "STATUS OF OUTPUT-REC" in item["message"] for item in report["findings"]))
-
     def test_period_terminated_if_resets_condition_scope(self):
         with tempfile.TemporaryDirectory() as directory:
             root = self._project(directory)
@@ -159,7 +141,6 @@ class AssuranceTests(unittest.TestCase):
             path.write_text(text, encoding="utf-8")
             report = analyze_assurance(root)
             self.assertFalse(any(item["type"] == "fallthrough" and item["from"] == "START-PARA" and item["to"] == "MID-PARA" for item in report["control_flow"]))
-
     def test_computed_goto_records_all_targets(self):
         with tempfile.TemporaryDirectory() as directory:
             root = self._project(directory)
@@ -169,7 +150,6 @@ class AssuranceTests(unittest.TestCase):
             report = analyze_assurance(root)
             targets = {item["to"] for item in report["control_flow"] if item["type"] == "computed-goto"}
             self.assertEqual(targets, {"MID-PARA", "END-PARA"})
-
     def test_compute_preserves_qualified_identity(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory); (root / "src").mkdir(); (root / "copybooks").mkdir()
@@ -178,8 +158,6 @@ class AssuranceTests(unittest.TestCase):
             report = analyze_assurance(root)
             self.assertTrue(any(item["field"] == "RESULT OF OUT-REC" and item["mode"] == "write" for item in report["field_access"]))
             self.assertTrue(any(item["field"] == "AMOUNT OF IN-REC" and item["mode"] == "read" for item in report["field_access"]))
-
-
 class ProfileHardeningTests(unittest.TestCase):
     def test_release_policy_cannot_be_weakened(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -187,15 +165,12 @@ class ProfileHardeningTests(unittest.TestCase):
             (root / "peacobol.json").write_text(json.dumps({"profiles": {"release": {"policy": {"max_findings": {"high": None}, "fail_on_build_warning": False, "require_evidence": False}}}}), encoding="utf-8")
             with self.assertRaises(ValueError):
                 load_profile(root, "release")
-
     def test_release_policy_can_be_strengthened(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             (root / "peacobol.json").write_text(json.dumps({"profiles": {"release": {"policy": {"max_findings": {"medium": 0}}}}}), encoding="utf-8")
             profile = load_profile(root, "release")
             self.assertEqual(profile["policy"]["max_findings"]["medium"], 0)
-
-
 class ImpactTests(unittest.TestCase):
     def test_field_changes_and_hash_are_reported(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -209,7 +184,6 @@ class ImpactTests(unittest.TestCase):
             self.assertGreaterEqual(result["summary"]["breaking"], 1)
             self.assertEqual(len(result["impact_hash"]), 64)
             self.assertTrue(any(item["path"] == "REC.CODE" and item["change"] == "modified" for item in result["changes"]))
-
     def test_identical_copybooks_are_compatible(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -219,8 +193,6 @@ class ImpactTests(unittest.TestCase):
             result = compare_copybooks(first, second)
             self.assertTrue(result["compatible"])
             self.assertFalse(result["changes"])
-
-
 class IntegrityHardeningTests(unittest.TestCase):
     @patch("peacobol.core.shutil.which", return_value="/usr/bin/cobc")
     def test_symlinked_build_directory_is_rejected(self, _):
@@ -233,7 +205,6 @@ class IntegrityHardeningTests(unittest.TestCase):
                 self.skipTest("Symlinks are unavailable")
             with self.assertRaises(ValueError):
                 build(root)
-
     def test_concurrent_audit_writers_preserve_chain(self):
         with tempfile.TemporaryDirectory() as directory:
             log = Path(directory) / "audit.jsonl"
@@ -246,7 +217,6 @@ class IntegrityHardeningTests(unittest.TestCase):
             result = verify_log(log)
             self.assertTrue(result["ok"])
             self.assertEqual(result["events"], 15)
-
     def test_audit_verification_is_safe_during_writes(self):
         with tempfile.TemporaryDirectory() as directory:
             log = Path(directory) / "audit.jsonl"
@@ -260,8 +230,6 @@ class IntegrityHardeningTests(unittest.TestCase):
             result = verify_log(log)
             self.assertTrue(result["ok"])
             self.assertEqual(result["events"], 21)
-
-
 class SarifTests(unittest.TestCase):
     def test_sarif_contains_rules_results_and_gate(self):
         report = {"schema": "peacobol-assurance-1", "project": "p", "gate": {"ok": False}, "findings": [{"rule": "PC501", "severity": "medium", "file": "A.cbl", "line": 4, "message": "Bounds", "remediation": "Validate"}]}
@@ -271,7 +239,5 @@ class SarifTests(unittest.TestCase):
         self.assertEqual(run["results"][0]["level"], "warning")
         self.assertEqual(run["tool"]["driver"]["rules"][0]["id"], "PC501")
         self.assertFalse(run["properties"]["gate"]["ok"])
-
-
 if __name__ == "__main__":
     unittest.main()

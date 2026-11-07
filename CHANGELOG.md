@@ -1,41 +1,50 @@
 # Changelog
 
-## 0.6.0 — Test Workbench and GUI
+## 0.7.0 — Enterprise Integration Foundations
 
 ### Added
 
-- Copybook-driven typical, minimum, maximum, and invalid record cases.
-- COBOL Check-compatible starter generation.
-- Golden-master binary comparison and difference gates.
-- Coverage import with verified evidence manifests, canonical source identity, source-derived denominators, integrity hashes, and threshold gates.
-- Seven-workbench server-rendered GUI covering scan, assurance, diagnostics, impact, tests, golden comparison, and coverage.
-- `test-cases`, `golden`, and `coverage` CLI commands.
+- Db2 copybook compatibility and incompatibility gates.
+- Db2, CICS, and MQ resource inventories.
+- Guarded offline Zowe/zOSMF submission plans.
+- CycloneDX-style SBOM generation.
+- Local keyed attestations and verification.
+- Reproducible immutable evidence archives and dry-run retention plans.
+- Enterprise resources, DB2 compatibility, and SBOM GUI views.
+- Windows, native Linux, and WSL launchers.
+- One-time GUI bootstrap exchange into an HttpOnly SameSite session cookie.
 
 ### Security
 
-- GUI remains loopback-only, validates the Host header, requires a random per-launch token, and rejects absolute paths, traversal, and symlink components.
-- GUI is script-free and sends CSP, nosniff, no-referrer, frame-ancestor, and no-store protections.
-- Coverage inputs are size-bounded, schema-validated local JSON.
+- Submission planning requires an enabled HTTPS allow-list target, an approved role, and a `vault://` credential reference.
+- Submission planning is dry-run-only and contains no network client.
+- Attestation keys require at least 32 bytes and are never persisted.
+- Evidence archives reject duplicate filenames and existing outputs.
+- Retention planning never deletes files.
 
 ### Changed
 
-- Version advanced from 0.5.0 to 0.6.0.
+- Version advanced from 0.6.0 to 0.7.0.
+
+## 0.6.0 — Test Workbench and GUI
+
+- Copybook test generation, golden comparison, verified coverage, parser robustness, and token-protected multi-workbench GUI.
 
 ## 0.5.0 — Assurance and Change Impact
 
-- Dependency graphs, field and flow inventories, structural impact analysis, SARIF, gates, profile hardening, contained builds, and concurrent audit integrity.
+- Dependency graphs, field/flow inventories, structural impact, SARIF, gates, and integrity hardening.
 
 ## 0.4.0 — Diagnostics Center
 
-- Spool analysis, validated local catalogs, source correlation, checklists, and hashed failure bundles.
+- Spool analysis, local catalogs, source correlation, checklists, and failure bundles.
 
 ## 0.3.0 — Build Profiles and IBM JCL
 
-- Versioned profiles, IBM JCL generation, normalized diagnostics, build manifests, and policy gates.
+- Versioned profiles, JCL generation, diagnostics, manifests, and policy gates.
 
 ## 0.2.0 — Data Integrity and Audit Workbench
 
-- Hierarchical copybooks, fixed-record tools, evidence, auditing, and safer local operation.
+- Hierarchical copybooks, records, evidence, auditing, and safer local operation.
 
 ## 0.1.0
 

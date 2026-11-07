@@ -1,18 +1,12 @@
 from __future__ import annotations
-
 import hashlib
 import json
 from pathlib import Path
 from typing import Any
-
 MAX_COVERAGE_BYTES = 10 * 1024 * 1024
 SOURCE_SUFFIXES = {".cbl", ".cob"}
-
-
 def _canonical(value: dict[str, Any]) -> bytes:
     return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
-
-
 def _read_json(path: Path, label: str) -> tuple[Path, bytes, dict[str, Any]]:
     if path.is_symlink():
         raise FileNotFoundError(f"{label} file not found: {path}")
@@ -25,8 +19,6 @@ def _read_json(path: Path, label: str) -> tuple[Path, bytes, dict[str, Any]]:
     if not isinstance(value, dict):
         raise ValueError(f"{label} input must be a JSON object")
     return path, raw, value
-
-
 def _source_universe(project_root: Path, evidence: dict[str, Any]) -> set[tuple[str, int]]:
     source_hashes = evidence.get("source_hashes")
     if not isinstance(source_hashes, dict):
@@ -64,8 +56,6 @@ def _source_universe(project_root: Path, evidence: dict[str, Any]) -> set[tuple[
     if not universe:
         raise ValueError("Evidence manifest contains no executable source lines")
     return universe
-
-
 def import_coverage(path: Path, evidence_manifest: Path | None = None, project_root: Path | None = None) -> dict[str, Any]:
     path, raw, value = _read_json(path, "Coverage")
     lines = value.get("lines")

@@ -1,5 +1,4 @@
 from __future__ import annotations
-
 import hashlib
 import json
 import os
@@ -7,20 +6,14 @@ import stat
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
-
 MAX_GOLDEN_BYTES = 64 * 1024 * 1024
 CHUNK_SIZE = 1024 * 1024
-
 from .copybook import Field, flatten_fields, parse_copybook, picture_digits, record_length
 from .records import pack_comp3
-
-
 def _scale(pic: str | None) -> int:
     if not pic or "V" not in pic.upper():
         return 0
     return picture_digits(pic.upper().split("V", 1)[1])
-
-
 def _display_bytes(field: Field, value: str, encoding: str) -> bytes:
     text = value
     pic = (field.picture or "").upper()
@@ -33,8 +26,6 @@ def _display_bytes(field: Field, value: str, encoding: str) -> bytes:
             negative_overpunch = {"0": "}", "1": "J", "2": "K", "3": "L", "4": "M", "5": "N", "6": "O", "7": "P", "8": "Q", "9": "R"}
             text = text[:-1] + negative_overpunch[text[-1]]
     return text.encode(encoding)[:field.length].ljust(field.length, b" ")
-
-
 def _field_value(field: Field, variant: str) -> Any:
     pic = (field.picture or "").upper()
     numeric = "9" in pic and "X" not in pic and "A" not in pic
@@ -58,8 +49,6 @@ def _field_value(field: Field, variant: str) -> Any:
     if variant == "invalid":
         return "\x00" * field.length
     return "A" * min(field.length, 1)
-
-
 def _encode_element(field: Field, value: Any, encoding: str, byteorder: str, signed: bool) -> bytes:
     usage = field.usage.upper()
     if usage in ("COMP-3", "PACKED-DECIMAL"):
@@ -82,8 +71,6 @@ def _encode_element(field: Field, value: Any, encoding: str, byteorder: str, sig
     if value == "invalid-numeric":
         return ("X" * field.length).encode(encoding)
     return _display_bytes(field, str(value), encoding)
-
-
 def _build_nodes(nodes: list[Field], variant: str, data: bytearray, encoding: str, byteorder: str, signed: bool, shift: int = 0) -> dict[str, Any]:
     values: dict[str, Any] = {}
     for node in nodes:
@@ -98,8 +85,6 @@ def _build_nodes(nodes: list[Field], variant: str, data: bytearray, encoding: st
             occurrences.append(value)
         values[node.name] = occurrences if node.occurs > 1 else occurrences[0]
     return values
-
-
 def generate_cases(copybook: Path, encoding: str = "ascii", byteorder: str = "big", signed: bool = True) -> dict[str, Any]:
     copybook = copybook.resolve()
     fields = parse_copybook(copybook)
@@ -122,8 +107,6 @@ def generate_cases(copybook: Path, encoding: str = "ascii", byteorder: str = "bi
     }
     payload["cases_hash"] = hashlib.sha256(json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")).hexdigest()
     return payload
-
-
 def cobol_check_stub(program: str, cases: dict[str, Any]) -> str:
     name = program.upper()
     if not name.replace("-", "").isalnum() or len(name) > 22:
@@ -156,8 +139,6 @@ def cobol_check_stub(program: str, cases: dict[str, Any]) -> str:
             "",
         ])
     return "\n".join(lines)
-
-
 def _open_bounded(path: Path):
     if path.is_symlink():
         raise FileNotFoundError(f"Golden file not found: {path}")
@@ -171,8 +152,6 @@ def _open_bounded(path: Path):
         os.close(descriptor)
         raise ValueError(f"Golden file exceeds {MAX_GOLDEN_BYTES} bytes")
     return absolute, descriptor, file_stat.st_size
-
-
 def compare_golden(actual: Path, expected: Path) -> dict[str, Any]:
     actual_path, actual_fd, actual_size = _open_bounded(actual)
     try:

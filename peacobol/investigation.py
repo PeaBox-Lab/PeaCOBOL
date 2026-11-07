@@ -1,17 +1,12 @@
 from __future__ import annotations
-
 import hashlib
 import json
 from pathlib import Path
 from typing import Any
-
 from .knowledge import lookup
 from .spool import parse_spool, read_spool
-
 MAX_CONTEXT_LINES = 8
 MAX_SOURCE_BYTES = 5 * 1024 * 1024
-
-
 def _safe_source(root: Path, raw: str) -> Path | None:
     unresolved = root / raw
     try:
@@ -33,8 +28,6 @@ def _safe_source(root: Path, raw: str) -> Path | None:
     if candidate.suffix.lower() not in {".cbl", ".cob", ".cpy"} or not candidate.is_file() or candidate.stat().st_size > MAX_SOURCE_BYTES:
         return None
     return candidate
-
-
 def _context(root: Path, reference: dict[str, Any], radius: int) -> dict[str, Any]:
     path = _safe_source(root, reference["file"])
     if path is None:
@@ -51,8 +44,6 @@ def _context(root: Path, reference: dict[str, Any], radius: int) -> dict[str, An
         "context_end": end,
         "context": [{"line": number, "text": lines[number - 1]} for number in range(start, end + 1)],
     }
-
-
 def _checklist(report: dict[str, Any], knowledge: list[dict[str, Any]], correlated: list[dict[str, Any]]) -> list[dict[str, Any]]:
     items: list[dict[str, Any]] = [
         {"order": 1, "action": "Preserve the original spool and record its SHA-256 hash.", "reason": "Maintains repeatable evidence for the investigation."},
@@ -71,8 +62,6 @@ def _checklist(report: dict[str, Any], knowledge: list[dict[str, Any]], correlat
             items.append({"order": len(items) + 1, "action": check, "reason": f"Catalog guidance for {entry['kind']} {entry['code']}."})
     items.append({"order": len(items) + 1, "action": "Reproduce under the same profile and compare the new evidence bundle.", "reason": "Confirms that the remediation changed the observed failure deterministically."})
     return items
-
-
 def diagnose(root: Path, spool_text: str, context_lines: int = 3) -> dict[str, Any]:
     root = root.resolve()
     if not root.is_dir():
@@ -99,8 +88,6 @@ def diagnose(root: Path, spool_text: str, context_lines: int = 3) -> dict[str, A
         "checklist": _checklist(report, knowledge, correlated),
         "ok": report["ok"],
     }
-
-
 def failure_bundle(root: Path, spool_path: Path, output_hint: str | None = None, context_lines: int = 3) -> dict[str, Any]:
     root = root.resolve()
     spool_bytes, spool_text = read_spool(spool_path)

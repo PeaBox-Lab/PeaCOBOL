@@ -1,12 +1,9 @@
 from __future__ import annotations
-
 import json
 import re
 from pathlib import Path
 from typing import Any
-
 CODE_RE = re.compile(r"^[A-Z0-9-]{1,32}$")
-
 BUILTIN_CATALOGS: dict[str, dict[str, dict[str, Any]]] = {
     "abend": {
         "UNKNOWN": {
@@ -23,8 +20,6 @@ BUILTIN_CATALOGS: dict[str, dict[str, dict[str, Any]]] = {
         }
     },
 }
-
-
 def _validate_entry(kind: str, code: str, value: Any) -> dict[str, Any]:
     code = code.upper()
     if not CODE_RE.fullmatch(code):
@@ -41,8 +36,6 @@ def _validate_entry(kind: str, code: str, value: Any) -> dict[str, Any]:
     if not isinstance(checks, list) or not checks or any(not isinstance(item, str) or not item.strip() for item in checks):
         raise ValueError(f"Knowledge entry {kind}:{code} requires non-empty checks")
     return {"title": title.strip(), "summary": summary.strip(), "checks": [item.strip() for item in checks]}
-
-
 def load_catalog(root: Path | None = None, kind: str = "abend") -> dict[str, dict[str, Any]]:
     if kind not in BUILTIN_CATALOGS:
         raise ValueError(f"Unknown knowledge catalog: {kind}")
@@ -56,16 +49,12 @@ def load_catalog(root: Path | None = None, kind: str = "abend") -> dict[str, dic
             for code, value in raw.items():
                 catalog[code.upper()] = _validate_entry(kind, code, value)
     return {code: _validate_entry(kind, code, value) for code, value in sorted(catalog.items())}
-
-
 def lookup(root: Path | None, kind: str, code: str) -> dict[str, Any]:
     code = code.upper()
     catalog = load_catalog(root, kind)
     matched = code in catalog
     entry = catalog.get(code, catalog["UNKNOWN"])
     return {"schema": "peacobol-knowledge-1", "kind": kind, "code": code, "matched": matched, **entry}
-
-
 def list_knowledge(root: Path | None = None) -> dict[str, Any]:
     return {
         "schema": "peacobol-knowledge-list-1",

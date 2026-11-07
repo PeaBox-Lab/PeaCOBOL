@@ -1,22 +1,15 @@
 from __future__ import annotations
-
 import re
 from pathlib import Path
 from typing import Any
-
 from .profiles import load_profile
-
 MEMBER_RE = re.compile(r"^[A-Z#$@][A-Z0-9#$@]{0,7}$")
 DATASET_RE = re.compile(r"^[A-Z#$@][A-Z0-9#$@-]{0,7}(?:\.[A-Z#$@][A-Z0-9#$@-]{0,7})*$")
-
-
 def _name(value: str, kind: str, pattern: re.Pattern[str]) -> str:
     value = value.upper()
     if not pattern.fullmatch(value):
         raise ValueError(f"Invalid {kind}: {value}")
     return value
-
-
 def generate_jcl(root: Path, program: str, profile_name: str = "release", source_dataset: str = "USER.COBOL.SOURCE", load_dataset: str = "USER.COBOL.LOAD", copybook_dataset: str | None = None, run: bool = True) -> dict[str, Any]:
     root = root.resolve()
     profile = load_profile(root, profile_name)

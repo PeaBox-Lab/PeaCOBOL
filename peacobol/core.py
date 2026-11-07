@@ -102,7 +102,7 @@ def create_project(path: Path, name: str) -> dict:
         (path / directory).mkdir(exist_ok=True)
     config = {
         "name": name,
-        "version": "0.6.0",
+        "version": "0.7.0",
         "source": ["src"],
         "copybooks": ["copybooks"],
         "default_profile": "development",
@@ -141,8 +141,6 @@ def _build_target(root: Path, output_root: Path, relative: Path) -> Path:
         raise ValueError(f"Build target may not be a symlink: {target.relative_to(root)}")
     target.resolve(strict=False).relative_to(trusted_root)
     return target
-
-
 def build(root: Path, timeout: int = 60, profile_name: str | None = None) -> dict:
     root = root.resolve()
     profile_name = resolve_profile_name(root, profile_name, "development")
