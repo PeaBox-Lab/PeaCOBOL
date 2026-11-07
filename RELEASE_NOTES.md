@@ -1,29 +1,30 @@
-# PeaCOBOL 0.3.0 Release Notes
+# PeaCOBOL 0.4.0 Release Notes
 
 ## Release theme
 
-**Build Profiles and IBM JCL**
+**Diagnostics Center**
 
-This release turns the 0.2.0 data and audit foundation into a controlled build workflow. It adds explicit environment profiles, deterministic JCL generation, comparable diagnostics, hashed build manifests, and policy decisions suitable for automation.
+This release turns compiler and runtime output into repeatable local investigation evidence without submitting jobs, accessing credentials, or asserting unapproved environment-specific meanings.
 
 ## Delivered
 
-- Four validated profiles: development, release, banking, and aerospace.
-- Profile-aware GnuCOBOL flags, data encoding, binary representation, IBM compiler options, and gate thresholds.
-- IBM Enterprise COBOL compile/link/run JCL generation with strict dataset/member validation and an optional no-run mode.
-- Diagnostic normalization for GnuCOBOL and IBM message formats.
-- Build manifest schema `peacobol-build-manifest-1` with source and compiled-artifact hashes.
-- Policy schema `peacobol-policy-1` covering findings, build outcome, warnings, and evidence.
-- CLI commands `profiles`, `jcl`, and `gate`; profile support for `build`, `decode`, and `convert`.
+- Spool return-code and failed-step extraction.
+- Abnormal-termination and COBOL file-status marker extraction.
+- Reuse of normalized GnuCOBOL and IBM compiler diagnostics.
+- Bounded compiler/spool-to-source correlation with source hashes.
+- Extensible, validated site catalogs with explicit unknown-code fallback behavior.
+- Deterministic investigation and remediation checklists.
+- Reproducible failure bundles with spool and bundle SHA-256 hashes.
+- CLI commands `knowledge`, `diagnose`, and `failure-bundle`.
 
 ## Validation summary
 
-- 32 automated tests pass: 16 retained regression tests and 16 new 0.3.0 tests.
+- 46 automated tests pass: 32 retained regression tests and 14 new 0.4.0 tests.
 - Python source compilation passes.
-- Profile override validation, binary byte order, JCL safety, diagnostic normalization, build manifest hashing, and release gates are covered.
-- End-to-end CLI checks cover profile inspection, JCL generation, scan/evidence generation, and gate exit semantics.
-- Missing GnuCOBOL remains a controlled capability limitation; no alternate compiler or shell-based fallback is attempted.
+- Tests cover spool extraction, clean and failed return codes, input-size limits, site catalog extension and validation, path traversal, symlink rejection, bounded source context, checklist generation, and repeatable bundle hashing.
+- End-to-end CLI validation covers diagnosis, knowledge lookup, failure-bundle output, and deterministic regeneration.
+- An independent security re-review reported no remaining security vulnerabilities after remediation.
 
 ## Boundary
 
-Generated JCL is never submitted. IBM datasets, compiler libraries, procedure names, and organization-specific JOB card values must be reviewed and adjusted for the target z/OS estate.
+The built-in catalogs provide safe fallback investigation guidance only. Environment-specific ABEND and file-status interpretations must be supplied through approved project-local catalog files.

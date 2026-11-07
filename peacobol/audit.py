@@ -5,23 +5,53 @@ import os
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+
 GENESIS = "0" * 64
+
+
 def _canonical(value: dict[str, Any]) -> bytes:
     return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+
+
+def _absolute(path: Path) -> Path:
+    return Path(os.path.abspath(os.fspath(path)))
+
+
+def _reject_symlink_components(path: Path) -> None:
+    path = _absolute(path)
+    current = Path(path.anchor)
+    for part in path.parts[1:]:
+        current = current / part
+        if current.is_symlink():
+            raise ValueError(f"Audit path may not contain symlinks: {path}")
+
+
+def _open_text(path: Path, flags: int):
+    nofollow = getattr(os, "O_NOFOLLOW", 0)
+    descriptor = os.open(path, flags | nofollow, 0o600)
+    mode = "a" if flags & os.O_APPEND else "r"
+    return os.fdopen(descriptor, mode, encoding="utf-8", newline="\n")
+
+
 def _last_hash(path: Path) -> str:
+    _reject_symlink_components(path)
     if not path.exists() or path.stat().st_size == 0:
         return GENESIS
     last = ""
-    with path.open(encoding="utf-8") as handle:
+    with _open_text(path, os.O_RDONLY) as handle:
         for line in handle:
             if line.strip():
                 last = line
     if not last:
         return GENESIS
     return json.loads(last)["event_hash"]
+
+
 def append_event(path: Path, action: str, subject: str, outcome: str, details: dict[str, Any] | None = None) -> dict[str, Any]:
-    path = path.resolve()
+    path = _absolute(path)
+    _reject_symlink_components(path.parent)
     path.parent.mkdir(parents=True, exist_ok=True)
+    _reject_symlink_components(path)
     event = {
         "schema": "peacobol-audit-1",
         "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -33,18 +63,24 @@ def append_event(path: Path, action: str, subject: str, outcome: str, details: d
         "previous_hash": _last_hash(path),
     }
     event["event_hash"] = hashlib.sha256(_canonical(event)).hexdigest()
-    with path.open("a", encoding="utf-8", newline="\n") as handle:
+    with _open_text(path, os.O_WRONLY | os.O_CREAT | os.O_APPEND) as handle:
         handle.write(json.dumps(event, sort_keys=True, ensure_ascii=False) + "\n")
         handle.flush()
         os.fsync(handle.fileno())
     return event
+
+
 def verify_log(path: Path) -> dict[str, Any]:
-    path = path.resolve()
+    path = _absolute(path)
+    try:
+        _reject_symlink_components(path)
+    except ValueError as exc:
+        return {"ok": False, "events": 0, "error": str(exc)}
     if not path.exists():
         return {"ok": False, "events": 0, "error": "Audit log does not exist"}
     previous = GENESIS
     count = 0
-    with path.open(encoding="utf-8") as handle:
+    with _open_text(path, os.O_RDONLY) as handle:
         for line_number, line in enumerate(handle, 1):
             if not line.strip():
                 continue

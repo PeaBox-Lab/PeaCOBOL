@@ -8,10 +8,13 @@ from typing import Any
 from .audit import append_event, verify_log
 from .copybook import parse_copybook, record_length
 from .core import build, create_project, doctor, evidence, scan_project
+from .investigation import diagnose, failure_bundle
 from .jcl import generate_jcl
+from .knowledge import list_knowledge, load_catalog, lookup
 from .policy import evaluate_policy
 from .profiles import list_profiles, load_profile, resolve_profile_name
 from .records import convert_records, decode_record, hex_view
+from .spool import read_spool
 
 def _atomic_write(path: Path, data: str) -> None:
     path = path.resolve()
@@ -62,6 +65,9 @@ def parser() -> argparse.ArgumentParser:
     x = sub.add_parser("profiles", help="List or inspect versioned profiles"); x.add_argument("path", nargs="?", default="."); x.add_argument("--name", choices=("development", "release", "banking", "aerospace")); x.add_argument("-o", "--output")
     x = sub.add_parser("jcl", help="Generate IBM Enterprise COBOL compile/link/run JCL"); x.add_argument("path", nargs="?", default="."); x.add_argument("program"); _add_profile(x, "release"); x.add_argument("--source-dataset", default="USER.COBOL.SOURCE"); x.add_argument("--load-dataset", default="USER.COBOL.LOAD"); x.add_argument("--copybook-dataset"); x.add_argument("--no-run", action="store_true"); x.add_argument("-o", "--output", required=True)
     x = sub.add_parser("gate", help="Evaluate profile policy gates"); x.add_argument("path", nargs="?", default="."); _add_profile(x, "release"); x.add_argument("--with-build", action="store_true"); x.add_argument("--with-evidence", action="store_true"); x.add_argument("--timeout", type=int, default=60); x.add_argument("-o", "--output")
+    x = sub.add_parser("knowledge", help="List or inspect diagnostic knowledge catalogs"); x.add_argument("path", nargs="?", default="."); x.add_argument("--kind", choices=("abend", "file-status")); x.add_argument("--code"); x.add_argument("-o", "--output")
+    x = sub.add_parser("diagnose", help="Analyze spool output and correlate source context"); x.add_argument("path", nargs="?", default="."); x.add_argument("spool"); x.add_argument("--context-lines", type=int, default=3); x.add_argument("-o", "--output")
+    x = sub.add_parser("failure-bundle", help="Create a deterministic hashed failure bundle"); x.add_argument("path", nargs="?", default="."); x.add_argument("spool"); x.add_argument("--context-lines", type=int, default=3); x.add_argument("-o", "--output", required=True)
     return p
 
 def _select_profile(args: argparse.Namespace, root: Path, fallback: str) -> str:
@@ -118,6 +124,20 @@ def dispatch(args: argparse.Namespace) -> Any:
         build_report = build(root, args.timeout, selected) if args.with_build else None
         evidence_report = evidence(root, scan) if args.with_evidence else None
         return evaluate_policy(profile, scan, build_report, evidence_report)
+    if args.cmd == "knowledge":
+        root = Path(args.path)
+        if args.code and not args.kind:
+            raise ValueError("--code requires --kind")
+        if args.code:
+            return lookup(root, args.kind, args.code)
+        if args.kind:
+            return {"schema": "peacobol-knowledge-list-1", "catalogs": {args.kind: load_catalog(root, args.kind)}}
+        return list_knowledge(root)
+    if args.cmd == "diagnose":
+        _, spool_text = read_spool(Path(args.spool))
+        return diagnose(Path(args.path), spool_text, args.context_lines)
+    if args.cmd == "failure-bundle":
+        return failure_bundle(Path(args.path), Path(args.spool), args.output, args.context_lines)
     raise ValueError(f"Unknown command: {args.cmd}")
 
 def main(argv: list[str] | None = None) -> int:

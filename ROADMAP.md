@@ -14,7 +14,7 @@
 - Profile-driven binary representation and encoding rules.
 - Policy gates for warnings, findings, builds, and missing evidence.
 
-## 0.4.0 — Diagnostics Center
+## Delivered: 0.4.0 — Diagnostics Center
 
 - ABEND and COBOL file-status knowledge bases.
 - Spool return-code extraction and compiler/source correlation.

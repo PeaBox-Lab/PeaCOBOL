@@ -26,3 +26,16 @@ Add sandboxed build workers, signed releases and rules, vault-managed credential
 - Policy gates produce explicit failed-check identifiers and a non-zero CLI result for automation.
 - Build manifests avoid absolute project paths and hash source and available output artifacts.
 - Normalized diagnostics are bounded by the existing compiler output limit.
+
+## 0.4.0 diagnostics controls
+
+- Spool files are limited to 10 MiB and checked before full reads.
+- Symlinked spool files are rejected.
+- Correlated source paths must resolve beneath the selected project root and must be regular non-symlinked files.
+- Source files larger than 5 MiB are not included in failure context.
+- Context excerpts are bounded to eight lines on either side of a source reference.
+- Site-specific catalog entries are local JSON, shape-validated, and never fetched remotely.
+- Failure bundles are deterministic and contain spool, source, and bundle integrity hashes.
+
+- Project profile compiler flags are allow-listed; execution and argument-forwarding options are rejected.
+- Audit logs reject symlink path components and use no-follow file opening where the platform supports it.

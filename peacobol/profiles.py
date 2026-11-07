@@ -51,6 +51,15 @@ def _merge(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]:
 
 
 def _validate(name: str, profile: dict[str, Any]) -> None:
+    compiler = profile.get("compiler", {})
+    flags = compiler.get("flags")
+    allowed_flags = {"-Wall", "-Wextra", "-O0", "-O1", "-O2", "-O3"}
+    if compiler.get("dialect") not in {"default", "ibm"}:
+        raise ValueError(f"Profile {name!r} has an unsupported compiler dialect")
+    if not isinstance(compiler.get("optimize"), bool):
+        raise ValueError(f"Profile {name!r} requires a boolean compiler optimize setting")
+    if not isinstance(flags, list) or any(not isinstance(flag, str) or flag not in allowed_flags for flag in flags):
+        raise ValueError(f"Profile {name!r} contains unsupported compiler flags")
     data = profile.get("data", {})
     if data.get("encoding") not in {"ascii", "utf-8", "cp037", "cp500"}:
         raise ValueError(f"Profile {name!r} has an unsupported encoding")
