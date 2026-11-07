@@ -100,6 +100,15 @@ def load_profile(root: Path | None = None, name: str = "development") -> dict[st
                     raise ValueError(f"Profile override {name!r} must be an object")
                 profile = _merge(profile, override)
                 source = config_path.name
+    base_policy = BUILTIN_PROFILES[name]["policy"]
+    merged_policy = profile["policy"]
+    for severity, base_limit in base_policy["max_findings"].items():
+        merged_limit = merged_policy["max_findings"].get(severity)
+        if base_limit is not None and (merged_limit is None or merged_limit > base_limit):
+            raise ValueError(f"Profile {name!r} may not weaken the {severity} finding limit")
+    for control in ("fail_on_build_warning", "require_evidence"):
+        if base_policy.get(control) is True and merged_policy.get(control) is not True:
+            raise ValueError(f"Profile {name!r} may not disable {control}")
     _validate(name, profile)
     return {"schema": PROFILE_SCHEMA, "name": name, "source": source, **profile}
 

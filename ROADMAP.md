@@ -21,7 +21,7 @@
 - Failure bundles with source context and integrity hashes.
 - Deterministic investigation and remediation checklists.
 
-## 0.5.0 — Assurance and Change Impact
+## Delivered: 0.5.0 — Assurance and Change Impact
 
 - Program call graph and copybook dependency graph.
 - Copybook field-level change-impact analysis.

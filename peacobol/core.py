@@ -102,7 +102,7 @@ def create_project(path: Path, name: str) -> dict:
         (path / directory).mkdir(exist_ok=True)
     config = {
         "name": name,
-        "version": "0.4.0",
+        "version": "0.5.0",
         "source": ["src"],
         "copybooks": ["copybooks"],
         "default_profile": "development",
@@ -122,6 +122,27 @@ def doctor() -> dict:
         "ready_for_gnucobol": bool(tools["cobc"]),
         "recommendations": [] if tools["cobc"] else ["Install GnuCOBOL to enable compilation; analysis and data tools remain available."],
     }
+def _build_target(root: Path, output_root: Path, relative: Path) -> Path:
+    if output_root.is_symlink():
+        raise ValueError("Build output directory may not be a symlink")
+    output_root.mkdir(exist_ok=True)
+    trusted_root = output_root.resolve()
+    trusted_root.relative_to(root)
+    current = output_root
+    for part in relative.parent.parts:
+        if part in ("", ".", ".."):
+            raise ValueError(f"Invalid build target path: {relative}")
+        current = current / part
+        if current.is_symlink():
+            raise ValueError(f"Build target directory may not be a symlink: {current.relative_to(root)}")
+        current.mkdir(exist_ok=True)
+    target = current / relative.name
+    if target.is_symlink():
+        raise ValueError(f"Build target may not be a symlink: {target.relative_to(root)}")
+    target.resolve(strict=False).relative_to(trusted_root)
+    return target
+
+
 def build(root: Path, timeout: int = 60, profile_name: str | None = None) -> dict:
     root = root.resolve()
     profile_name = resolve_profile_name(root, profile_name, "development")
@@ -150,10 +171,9 @@ def build(root: Path, timeout: int = 60, profile_name: str | None = None) -> dic
         flags.append("-std=ibm")
     for source in sources:
         relative = source.relative_to(root)
-        target = output_root / target_names[source]
-        target.parent.mkdir(parents=True, exist_ok=True)
-        if target.exists() or target.is_symlink():
-            if not target.is_file() and not target.is_symlink():
+        target = _build_target(root, output_root, target_names[source])
+        if target.exists():
+            if not target.is_file():
                 raise ValueError(f"Build target is not a file: {target.relative_to(root)}")
             target.unlink()
         args = [cobc, "-x", *flags]

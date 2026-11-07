@@ -5,8 +5,10 @@ import os
 import sys
 from pathlib import Path
 from typing import Any
+from .assurance import analyze_assurance
 from .audit import append_event, verify_log
 from .copybook import parse_copybook, record_length
+from .impact import compare_copybooks
 from .core import build, create_project, doctor, evidence, scan_project
 from .investigation import diagnose, failure_bundle
 from .jcl import generate_jcl
@@ -14,6 +16,7 @@ from .knowledge import list_knowledge, load_catalog, lookup
 from .policy import evaluate_policy
 from .profiles import list_profiles, load_profile, resolve_profile_name
 from .records import convert_records, decode_record, hex_view
+from .sarif import to_sarif
 from .spool import read_spool
 
 def _atomic_write(path: Path, data: str) -> None:
@@ -68,6 +71,8 @@ def parser() -> argparse.ArgumentParser:
     x = sub.add_parser("knowledge", help="List or inspect diagnostic knowledge catalogs"); x.add_argument("path", nargs="?", default="."); x.add_argument("--kind", choices=("abend", "file-status")); x.add_argument("--code"); x.add_argument("-o", "--output")
     x = sub.add_parser("diagnose", help="Analyze spool output and correlate source context"); x.add_argument("path", nargs="?", default="."); x.add_argument("spool"); x.add_argument("--context-lines", type=int, default=3); x.add_argument("-o", "--output")
     x = sub.add_parser("failure-bundle", help="Create a deterministic hashed failure bundle"); x.add_argument("path", nargs="?", default="."); x.add_argument("spool"); x.add_argument("--context-lines", type=int, default=3); x.add_argument("-o", "--output", required=True)
+    x = sub.add_parser("assure", help="Build assurance graphs, inventories and findings"); x.add_argument("path", nargs="?", default="."); x.add_argument("--fail-on", choices=("none", "critical", "high", "medium", "low"), default="none"); x.add_argument("--format", choices=("json", "sarif"), default="json"); x.add_argument("-o", "--output")
+    x = sub.add_parser("impact", help="Compare two copybook versions field by field"); x.add_argument("before"); x.add_argument("after"); x.add_argument("--fail-on-breaking", action="store_true"); x.add_argument("-o", "--output")
     return p
 
 def _select_profile(args: argparse.Namespace, root: Path, fallback: str) -> str:
@@ -138,6 +143,14 @@ def dispatch(args: argparse.Namespace) -> Any:
         return diagnose(Path(args.path), spool_text, args.context_lines)
     if args.cmd == "failure-bundle":
         return failure_bundle(Path(args.path), Path(args.spool), args.output, args.context_lines)
+    if args.cmd == "assure":
+        report = analyze_assurance(Path(args.path), args.fail_on)
+        return to_sarif(report) if args.format == "sarif" else report
+    if args.cmd == "impact":
+        report = compare_copybooks(Path(args.before), Path(args.after))
+        report["ok"] = not (args.fail_on_breaking and not report["compatible"])
+        report["gate"] = {"fail_on_breaking": args.fail_on_breaking, "ok": report["ok"]}
+        return report
     raise ValueError(f"Unknown command: {args.cmd}")
 
 def main(argv: list[str] | None = None) -> int:
@@ -149,7 +162,10 @@ def main(argv: list[str] | None = None) -> int:
             emit(result, output)
         if not args.no_audit:
             append_event(_audit_path(args), args.cmd, str(_subject(args)), "success", {"output": output, "ok": result.get("ok") if isinstance(result, dict) else None, "profile": getattr(args, "profile", None)})
-        return 3 if args.cmd == "gate" and not result.get("ok") else 0
+        gate_ok = result.get("ok", True)
+        if args.cmd == "assure" and args.format == "sarif":
+            gate_ok = result["runs"][0].get("properties", {}).get("gate", {}).get("ok", True)
+        return 3 if args.cmd in ("gate", "assure", "impact") and not gate_ok else 0
     except Exception as exc:
         if not args.no_audit:
             try:

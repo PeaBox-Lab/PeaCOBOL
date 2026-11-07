@@ -39,3 +39,15 @@ Add sandboxed build workers, signed releases and rules, vault-managed credential
 
 - Project profile compiler flags are allow-listed; execution and argument-forwarding options are rejected.
 - Audit logs reject symlink path components and use no-follow file opening where the platform supports it.
+
+## 0.5.0 assurance controls
+
+- Assurance analysis reuses bounded, non-symlinked source discovery and excludes generated, audit, cache, and report directories.
+- Graph identifiers and SARIF locations come from discovered local source paths; no source content is uploaded.
+- Severity and change-impact gates are deterministic and produce a distinct non-zero exit status without executing source code.
+- Copybook impact files are parsed locally and their exact input hashes are recorded in the report.
+- Findings are review signals rather than claims of exploitability or runtime certainty.
+
+- Release, banking, and aerospace profile overrides cannot weaken inherited finding, warning, or evidence gates.
+- Build output directories and target components reject symlinks and remain contained beneath the project build root.
+- Audit append and verification operations share an inter-process lock over complete hash-chain transactions.

@@ -1,15 +1,14 @@
 # Architecture
 
-PeaCOBOL 0.4.0 separates deterministic analysis, data interpretation, build control, diagnostics, policy, evidence, and audit concerns:
+PeaCOBOL 0.5.0 separates deterministic source interpretation into inspectable layers:
 
-1. **Source assurance** discovers programs, calls, copy references, paragraphs, and deterministic findings without executing project code.
-2. **Copybook and record workbench** computes layouts and decodes fixed records with profile-driven representation.
-3. **Profile and build engines** validate configuration, generate IBM JCL, invoke GnuCOBOL safely, normalize diagnostics, and hash build artifacts.
-4. **Spool parser** extracts bounded job-step, return-code, abnormal-termination, file-status, compiler, and source-reference signals.
-5. **Knowledge layer** merges safe built-in fallback guidance with validated project-local diagnostic catalogs.
-6. **Investigation engine** correlates spool signals with bounded source excerpts and generates an ordered deterministic checklist.
-7. **Failure-bundle engine** hashes the original spool and canonical diagnosis payload for repeatable evidence.
-8. **Policy, evidence, and audit engines** enforce release checks, create reproducible manifests, and append hash-linked action records.
-9. **Local UI** remains read-only, loopback-bound, and restricted to a configured project root.
+1. **Source inventory** applies bounded file discovery and comment-aware line extraction.
+2. **Base assurance** identifies programs, calls, copy references, paragraphs, and stable line-oriented findings.
+3. **Graph engine** resolves program identities, call targets, copybook names, and paragraph edges.
+4. **Access and flow engine** records supported field reads, writes, and external-input propagation.
+5. **Change-impact engine** compares flattened copybook paths and storage attributes, then hashes the canonical result.
+6. **SARIF adapter** maps rules, severities, locations, and remediation into SARIF 2.1.0.
+7. **Gate engine** applies selected severity or breaking-change thresholds with automation-safe exit status 3.
+8. **Diagnostics, build, data, evidence, and audit layers** retain the controls delivered in earlier releases.
 
-Remote execution, credential handling, mainframe submission, and environment-specific operational assertions remain outside this trust boundary.
+The architecture deliberately avoids claiming complete compiler semantics. Each derived relationship retains its file and line evidence where available.

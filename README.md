@@ -1,59 +1,54 @@
-# PeaCOBOL 0.4.0
+# PeaCOBOL 0.5.0
 
-PeaCOBOL is a local-first COBOL data, development, assurance, and diagnostics toolkit. Version 0.4.0 is the **Diagnostics Center** release.
+PeaCOBOL is a local-first COBOL data, development, diagnostics, assurance, and change-impact toolkit. Version 0.5.0 is the **Assurance and Change Impact** release.
 
 ## What is included
 
-- Deterministic spool parsing for job steps, return codes, abnormal-termination markers, COBOL file-status values, compiler diagnostics, and source references
-- Extensible ABEND and file-status knowledge catalogs under `.peacobol/knowledge/`
-- Explicit fallback guidance when a site catalog has no matching code
-- Compiler and spool correlation with bounded source excerpts and source SHA-256 hashes
-- Repeatable failure bundles containing spool hashes, diagnosis data, source context, remediation checklists, and an overall bundle hash
-- Versioned build profiles, IBM compile/link/run JCL generation, normalized compiler diagnostics, build manifests, and policy gates from 0.3.0
-- Copybook analysis, record conversion, evidence manifests, and hash-chained action auditing from earlier releases
+- Program call graphs with resolved and unresolved targets
+- Program and copybook dependency graphs, including nested `COPY` references
+- Field read/write inventories for deterministic statement patterns
+- Paragraph-level control-flow edges for fallthrough, `PERFORM`, and `GO TO`
+- External-input data-flow tracking through supported `MOVE` and `COMPUTE` patterns
+- Assurance rules for unbounded subscripts, potentially truncating moves, sensitive use of external input, and `MOVE CORRESPONDING` change risk
+- Field-level copybook change-impact comparison with source hashes, record-length deltas, compatibility decisions, and an overall impact hash
+- SARIF 2.1.0 export and configurable severity gates
+- Diagnostics Center, build profiles, IBM JCL generation, record tools, reproducible evidence, and hash-chained auditing from earlier releases
 
 ## Quick start
 
 ```bash
 python -m pip install -e .
-peacobol doctor
-peacobol diagnose examples/payments failure.log -o diagnosis.json
-peacobol failure-bundle examples/payments failure.log -o failure-bundle.json
+peacobol assure examples/payments -o assurance.json
+peacobol assure examples/payments --format sarif -o assurance.sarif
+peacobol assure examples/payments --fail-on high -o gate.json
 ```
 
-Inspect the diagnostic catalogs:
+A failed assurance gate exits with status 3. Thresholds include the selected severity and all more severe findings.
+
+Compare copybook versions:
 
 ```bash
-peacobol knowledge examples/payments
-peacobol knowledge examples/payments --kind abend --code S0C7
-peacobol knowledge examples/payments --kind file-status --code 35
+peacobol impact before/ACCOUNT.cpy after/ACCOUNT.cpy -o impact.json
+peacobol impact before/ACCOUNT.cpy after/ACCOUNT.cpy --fail-on-breaking -o impact-gate.json
 ```
 
-## Site-specific knowledge
+`--fail-on-breaking` exits with status 3 when a field is removed or when its storage, location, occurrence, overlay, usage, picture, or parent changes. Record-length changes are also incompatible.
 
-PeaCOBOL does not claim environment-specific meanings without an approved local catalog. Add validated JSON entries at:
+## Assurance outputs
 
-- `.peacobol/knowledge/abend.json`
-- `.peacobol/knowledge/file-status.json`
+The JSON assurance report contains:
 
-Example structure:
+- `program_graph`
+- `copybook_graph`
+- `field_access`
+- `control_flow`
+- `data_flow`
+- `findings`
+- `summary`
+- `gate`
 
-```json
-{
-  "SITE-CODE": {
-    "title": "Approved site title",
-    "summary": "Approved site explanation.",
-    "checks": ["Follow the approved local runbook."]
-  }
-}
-```
-
-Catalog codes, titles, summaries, and checklist items are validated before use.
-
-## Failure-bundle integrity
-
-A bundle records the original spool filename and SHA-256, bounded correlated source excerpts with source hashes, normalized evidence, an ordered checklist, and a deterministic `bundle_hash`. The bundle contains no submission, credential, or remote-execution behavior.
+SARIF output contains one rule definition per PeaCOBOL rule and a result with file, line, severity, message, and remediation for every finding.
 
 ## Boundaries
 
-The spool parser is deterministic and intentionally supports bounded common marker formats rather than every vendor message. Site-specific facts belong in approved local catalogs. Source correlation reads only regular, non-symlinked files beneath the selected project root. Spool files are size-limited and symlinks are rejected.
+The analyzer remains deterministic and narrower than a compiler. Access and flow inventories cover explicit supported statement patterns and do not claim complete COBOL semantic analysis. A finding identifies a review requirement, not proof of a defect. Change-impact comparison is structural and does not replace application or interface testing.
