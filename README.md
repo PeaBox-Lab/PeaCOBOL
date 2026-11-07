@@ -1,58 +1,73 @@
-# PeaCOBOL 0.2.0
+# PeaCOBOL 0.3.0
 
-PeaCOBOL is a local-first COBOL data, development, and assurance toolkit. Version 0.2.0 is the **Data Integrity and Audit Workbench** release, built from an audit of the supplied 0.1.0 implementation.
+PeaCOBOL is a local-first COBOL data, development, and assurance toolkit. Version 0.3.0 is the **Build Profiles and IBM JCL** release.
 
 ## What is included
 
-- Hierarchical copybook parsing with nested groups
-- `OCCURS` sizing and repeated-field decoding
-- `REDEFINES` overlay offsets and validation
-- DISPLAY, BINARY, and COMP-3 storage calculations
-- COMP-3 encode/decode with invalid-nibble checks
-- ASCII, UTF-8, EBCDIC CP037, and EBCDIC CP500 record decoding
-- Fixed-record conversion to JSONL and flat CSV
-- Bounded hex inspection
-- Deterministic source scanning and assurance findings
-- Reproducible evidence manifests that exclude generated and audit content
-- Hash-chained, append-only local action audit records
-- Safer GnuCOBOL compilation with fixed argument arrays, timeouts, bounded diagnostics, copybook include paths, and collision-free targets
-- A loopback-only UI constrained to an administrator-selected root
+- Versioned `development`, `release`, `banking`, and `aerospace` profiles
+- Project-level profile overrides with validation and safe built-in defaults
+- Profile-driven text encoding, binary byte order, signed representation, compiler flags, and policy thresholds
+- IBM Enterprise COBOL compile/link/run JCL generation with validated member and dataset names
+- Normalized GnuCOBOL and IBM Enterprise COBOL diagnostics
+- Reproducible build manifests with source and artifact SHA-256 hashes
+- Policy gates for finding severity, build success, warnings, and evidence presence
+- Hierarchical copybook parsing, `OCCURS`, `REDEFINES`, COMP-3, EBCDIC, record conversion, evidence manifests, and hash-chained action auditing from 0.2.0
+- Safer GnuCOBOL compilation and a loopback-only local UI
 
 ## Quick start
 
 ```bash
 python -m pip install -e .
 peacobol doctor
+peacobol profiles .
 peacobol scan examples/payments
-peacobol copybook examples/payments/copybooks/ACCOUNT.cpy
-peacobol evidence examples/payments -o examples/payments/reports/evidence.json
+peacobol build examples/payments --profile development
 ```
 
-Data commands:
+Generate controlled IBM JCL without submitting it:
 
 ```bash
-peacobol decode layout.cpy record.dat --encoding cp037
-peacobol convert layout.cpy records.dat --encoding cp037 --format jsonl -o records.jsonl
-peacobol hex records.dat --limit 4096
+peacobol jcl examples/payments PAYMENT \
+  --profile banking \
+  --source-dataset BANK.COBOL.SOURCE \
+  --copybook-dataset BANK.COBOL.COPY \
+  --load-dataset BANK.COBOL.LOAD \
+  -o PAYMENT.jcl
 ```
 
-Audit commands:
+Evaluate a release gate:
 
 ```bash
-peacobol scan examples/payments
-peacobol audit-verify examples/payments/.peacobol/audit.jsonl
+peacobol gate examples/payments --profile release --with-build --with-evidence -o gate.json
 ```
 
-All CLI actions write a local hash-chained event by default. Use `--audit-log` to select another path or `--no-audit` for an intentionally unaudited invocation.
+A failed gate exits with status 3. Operational errors exit with status 2.
 
-## UI
+## Profile-driven data handling
 
 ```bash
-peacobol-ui --root /path/to/approved/projects
+peacobol decode layout.cpy record.dat --project . --profile banking
+peacobol convert layout.cpy records.dat --project . --profile banking --format jsonl -o records.jsonl
 ```
 
-The UI binds to `127.0.0.1` and rejects project paths outside the configured root.
+An explicit `--encoding` overrides only the profile encoding; binary byte order and signedness still come from the selected profile.
 
-## Current boundaries
+## Profile overrides
 
-The parser is deterministic and intentionally narrower than a full COBOL compiler. It does not yet implement condition names, RENAMES, variable-length OCCURS DEPENDING ON decoding, every national/edited picture clause, source-format directives, or dialect-specific preprocessing. Compilation targets GnuCOBOL when `cobc` is installed. No remote job submission is included.
+`peacobol.json` may override selected built-in values while inheriting the remaining controls:
+
+```json
+{
+  "default_profile": "release",
+  "profiles": {
+    "release": {
+      "data": {"binary_byteorder": "little"},
+      "policy": {"max_findings": {"medium": 0}}
+    }
+  }
+}
+```
+
+## Security boundary
+
+JCL is generated and validated locally; PeaCOBOL does not submit jobs or use credentials. GnuCOBOL compilation uses fixed argument arrays with `shell=False`, timeouts, bounded diagnostics, and collision-free targets. Build execution is local and is not a sandbox.

@@ -1,19 +1,13 @@
 from __future__ import annotations
-
 import hashlib
 import json
 import os
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
-
 GENESIS = "0" * 64
-
-
 def _canonical(value: dict[str, Any]) -> bytes:
     return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
-
-
 def _last_hash(path: Path) -> str:
     if not path.exists() or path.stat().st_size == 0:
         return GENESIS
@@ -25,8 +19,6 @@ def _last_hash(path: Path) -> str:
     if not last:
         return GENESIS
     return json.loads(last)["event_hash"]
-
-
 def append_event(path: Path, action: str, subject: str, outcome: str, details: dict[str, Any] | None = None) -> dict[str, Any]:
     path = path.resolve()
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -46,8 +38,6 @@ def append_event(path: Path, action: str, subject: str, outcome: str, details: d
         handle.flush()
         os.fsync(handle.fileno())
     return event
-
-
 def verify_log(path: Path) -> dict[str, Any]:
     path = path.resolve()
     if not path.exists():

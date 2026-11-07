@@ -1,17 +1,17 @@
 from __future__ import annotations
-
 import argparse
 import json
 import os
 import sys
 from pathlib import Path
 from typing import Any
-
 from .audit import append_event, verify_log
 from .copybook import parse_copybook, record_length
 from .core import build, create_project, doctor, evidence, scan_project
+from .jcl import generate_jcl
+from .policy import evaluate_policy
+from .profiles import list_profiles, load_profile, resolve_profile_name
 from .records import convert_records, decode_record, hex_view
-
 
 def _atomic_write(path: Path, data: str) -> None:
     path = path.resolve()
@@ -19,7 +19,6 @@ def _atomic_write(path: Path, data: str) -> None:
     temp = path.with_name(path.name + ".tmp")
     temp.write_text(data, encoding="utf-8", newline="\n")
     temp.replace(path)
-
 
 def emit(value: Any, output: str | None = None) -> None:
     data = json.dumps(value, indent=2, ensure_ascii=False) + "\n"
@@ -29,12 +28,10 @@ def emit(value: Any, output: str | None = None) -> None:
     else:
         print(data, end="")
 
-
 def _subject(args: argparse.Namespace) -> Path:
-    raw = getattr(args, "path", None) or getattr(args, "file", None) or getattr(args, "copybook", None) or "."
+    raw = getattr(args, "path", None) or getattr(args, "project", None) or getattr(args, "file", None) or getattr(args, "copybook", None) or "."
     value = Path(raw).resolve()
     return value if value.is_dir() else value.parent
-
 
 def _audit_path(args: argparse.Namespace) -> Path:
     if args.audit_log:
@@ -44,6 +41,8 @@ def _audit_path(args: argparse.Namespace) -> Path:
         return Path(env)
     return _subject(args) / ".peacobol" / "audit.jsonl"
 
+def _add_profile(parser: argparse.ArgumentParser, default: str | None = None) -> None:
+    parser.add_argument("--profile", default=None, choices=("development", "release", "banking", "aerospace"))
 
 def parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="peacobol", description="Local-first COBOL data, development and assurance toolkit")
@@ -54,14 +53,25 @@ def parser() -> argparse.ArgumentParser:
     sub.add_parser("doctor", help="Check local tool readiness")
     x = sub.add_parser("scan", help="Analyze COBOL source"); x.add_argument("path", nargs="?", default="."); x.add_argument("-o", "--output")
     x = sub.add_parser("copybook", help="Inspect copybook layout"); x.add_argument("file"); x.add_argument("-o", "--output")
-    x = sub.add_parser("decode", help="Decode one fixed-length record"); x.add_argument("copybook"); x.add_argument("file"); x.add_argument("--encoding", default="ascii"); x.add_argument("-o", "--output")
-    x = sub.add_parser("convert", help="Convert fixed records to JSONL or CSV"); x.add_argument("copybook"); x.add_argument("file"); x.add_argument("--encoding", default="ascii"); x.add_argument("--format", choices=("jsonl", "csv"), default="jsonl"); x.add_argument("-o", "--output", required=True)
+    x = sub.add_parser("decode", help="Decode one fixed-length record"); x.add_argument("copybook"); x.add_argument("file"); x.add_argument("--project", default="."); x.add_argument("--encoding"); _add_profile(x); x.add_argument("-o", "--output")
+    x = sub.add_parser("convert", help="Convert fixed records to JSONL or CSV"); x.add_argument("copybook"); x.add_argument("file"); x.add_argument("--project", default="."); x.add_argument("--encoding"); _add_profile(x); x.add_argument("--format", choices=("jsonl", "csv"), default="jsonl"); x.add_argument("-o", "--output", required=True)
     x = sub.add_parser("hex", help="Create a bounded hex view"); x.add_argument("file"); x.add_argument("--width", type=int, default=16); x.add_argument("--limit", type=int, default=4096); x.add_argument("-o", "--output")
-    x = sub.add_parser("build", help="Compile with GnuCOBOL without shell execution"); x.add_argument("path", nargs="?", default="."); x.add_argument("--timeout", type=int, default=60); x.add_argument("-o", "--output")
+    x = sub.add_parser("build", help="Compile with a versioned build profile"); x.add_argument("path", nargs="?", default="."); x.add_argument("--timeout", type=int, default=60); _add_profile(x); x.add_argument("-o", "--output")
     x = sub.add_parser("evidence", help="Create a reproducible evidence manifest"); x.add_argument("path", nargs="?", default="."); x.add_argument("-o", "--output")
     x = sub.add_parser("audit-verify", help="Verify a hash-chained audit log"); x.add_argument("file"); x.add_argument("-o", "--output")
+    x = sub.add_parser("profiles", help="List or inspect versioned profiles"); x.add_argument("path", nargs="?", default="."); x.add_argument("--name", choices=("development", "release", "banking", "aerospace")); x.add_argument("-o", "--output")
+    x = sub.add_parser("jcl", help="Generate IBM Enterprise COBOL compile/link/run JCL"); x.add_argument("path", nargs="?", default="."); x.add_argument("program"); _add_profile(x, "release"); x.add_argument("--source-dataset", default="USER.COBOL.SOURCE"); x.add_argument("--load-dataset", default="USER.COBOL.LOAD"); x.add_argument("--copybook-dataset"); x.add_argument("--no-run", action="store_true"); x.add_argument("-o", "--output", required=True)
+    x = sub.add_parser("gate", help="Evaluate profile policy gates"); x.add_argument("path", nargs="?", default="."); _add_profile(x, "release"); x.add_argument("--with-build", action="store_true"); x.add_argument("--with-evidence", action="store_true"); x.add_argument("--timeout", type=int, default=60); x.add_argument("-o", "--output")
     return p
 
+def _select_profile(args: argparse.Namespace, root: Path, fallback: str) -> str:
+    selected = resolve_profile_name(root, args.profile, fallback)
+    args.profile = selected
+    return selected
+
+def _profile_data(args: argparse.Namespace) -> dict[str, Any]:
+    root = Path(args.project)
+    return load_profile(root, _select_profile(args, root, "development"))["data"]
 
 def dispatch(args: argparse.Namespace) -> Any:
     if args.cmd == "init":
@@ -72,15 +82,15 @@ def dispatch(args: argparse.Namespace) -> Any:
         return scan_project(Path(args.path))
     if args.cmd == "copybook":
         fields = parse_copybook(Path(args.file))
-        return {"schema": "peacobol-copybook-2", "record_length": record_length(fields), "fields": [f.to_dict() for f in fields]}
+        return {"schema": "peacobol-copybook-3", "record_length": record_length(fields), "fields": [f.to_dict() for f in fields]}
     if args.cmd == "decode":
-        fields = parse_copybook(Path(args.copybook))
-        return {"schema": "peacobol-record-2", "record": decode_record(fields, Path(args.file).read_bytes(), args.encoding)}
+        fields = parse_copybook(Path(args.copybook)); data = _profile_data(args); encoding = args.encoding or data["encoding"]
+        return {"schema": "peacobol-record-3", "profile": args.profile, "encoding": encoding, "record": decode_record(fields, Path(args.file).read_bytes(), encoding, data["binary_byteorder"], data["binary_signed"])}
     if args.cmd == "convert":
-        fields = parse_copybook(Path(args.copybook))
-        data = convert_records(fields, Path(args.file), args.encoding, args.format)
-        _atomic_write(Path(args.output), data)
-        return {"ok": True, "output": args.output, "format": args.format}
+        fields = parse_copybook(Path(args.copybook)); data = _profile_data(args); encoding = args.encoding or data["encoding"]
+        converted = convert_records(fields, Path(args.file), encoding, args.format, data["binary_byteorder"], data["binary_signed"])
+        _atomic_write(Path(args.output), converted)
+        return {"ok": True, "output": args.output, "format": args.format, "profile": args.profile, "encoding": encoding}
     if args.cmd == "hex":
         if args.limit < 1 or args.limit > 1024 * 1024:
             raise ValueError("Hex limit must be between 1 and 1048576 bytes")
@@ -88,25 +98,38 @@ def dispatch(args: argparse.Namespace) -> Any:
     if args.cmd == "build":
         if args.timeout < 1 or args.timeout > 3600:
             raise ValueError("Build timeout must be between 1 and 3600 seconds")
-        return build(Path(args.path), args.timeout)
+        root = Path(args.path)
+        return build(root, args.timeout, _select_profile(args, root, "development"))
     if args.cmd == "evidence":
         excluded = [Path(args.output)] if args.output else []
         return evidence(Path(args.path), exclude=excluded)
     if args.cmd == "audit-verify":
         return verify_log(Path(args.file))
+    if args.cmd == "profiles":
+        return load_profile(Path(args.path), args.name) if args.name else list_profiles(Path(args.path))
+    if args.cmd == "jcl":
+        root = Path(args.path)
+        selected = _select_profile(args, root, "release")
+        result = generate_jcl(root, args.program, selected, args.source_dataset, args.load_dataset, args.copybook_dataset, not args.no_run)
+        _atomic_write(Path(args.output), result.pop("jcl"))
+        return {"ok": True, "output": args.output, **result}
+    if args.cmd == "gate":
+        root = Path(args.path); selected = _select_profile(args, root, "release"); profile = load_profile(root, selected); scan = scan_project(root)
+        build_report = build(root, args.timeout, selected) if args.with_build else None
+        evidence_report = evidence(root, scan) if args.with_evidence else None
+        return evaluate_policy(profile, scan, build_report, evidence_report)
     raise ValueError(f"Unknown command: {args.cmd}")
-
 
 def main(argv: list[str] | None = None) -> int:
     args = parser().parse_args(argv)
     output = getattr(args, "output", None)
     try:
         result = dispatch(args)
-        if args.cmd != "convert":
+        if args.cmd not in ("convert", "jcl"):
             emit(result, output)
         if not args.no_audit:
-            append_event(_audit_path(args), args.cmd, str(_subject(args)), "success", {"output": output, "ok": result.get("ok") if isinstance(result, dict) else None})
-        return 0
+            append_event(_audit_path(args), args.cmd, str(_subject(args)), "success", {"output": output, "ok": result.get("ok") if isinstance(result, dict) else None, "profile": getattr(args, "profile", None)})
+        return 3 if args.cmd == "gate" and not result.get("ok") else 0
     except Exception as exc:
         if not args.no_audit:
             try:
@@ -115,7 +138,5 @@ def main(argv: list[str] | None = None) -> int:
                 pass
         print(json.dumps({"ok": False, "error": str(exc), "error_type": type(exc).__name__}, indent=2), file=sys.stderr)
         return 2
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

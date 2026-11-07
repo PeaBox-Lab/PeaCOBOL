@@ -5,15 +5,14 @@
 - Correct nested copybook offsets, `OCCURS`, and `REDEFINES`.
 - COMP-3 and fixed-record decoding, EBCDIC support, JSONL/CSV conversion, and hex inspection.
 - Hash-chained action auditing and reproducible evidence.
-- Safer project scanning, build execution, and loopback UI boundaries.
 
-## 0.3.0 — Build Profiles and IBM JCL
+## Delivered: 0.3.0 — Build Profiles and IBM JCL
 
-- Versioned development, release, banking, and aerospace build profiles.
+- Versioned development, release, banking, and aerospace profiles.
 - IBM Enterprise COBOL compile/link/run JCL generation.
-- Compiler diagnostic normalization and build manifests.
+- Compiler diagnostic normalization and hashed build manifests.
 - Profile-driven binary representation and encoding rules.
-- Policy gates for warnings, findings, and missing evidence.
+- Policy gates for warnings, findings, builds, and missing evidence.
 
 ## 0.4.0 — Diagnostics Center
 

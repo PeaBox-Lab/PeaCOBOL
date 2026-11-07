@@ -1,17 +1,13 @@
 from __future__ import annotations
-
 import re
 from dataclasses import dataclass, field, asdict
 from pathlib import Path
 from typing import Any
-
 DECL_RE = re.compile(r"^\s*(\d{2}|77)\s+([A-Z0-9-]+)\b(.*)$", re.I)
 REDEFINES_RE = re.compile(r"\bREDEFINES\s+([A-Z0-9-]+)", re.I)
 OCCURS_RE = re.compile(r"\bOCCURS\s+(\d+)\s+(?:TO\s+(\d+)\s+)?TIMES\b", re.I)
 PIC_RE = re.compile(r"\bPIC(?:TURE)?\s+(?:IS\s+)?([^\s.]+)", re.I)
 USAGE_RE = re.compile(r"(?:\bUSAGE\s+(?:IS\s+)?)?\b(COMP(?:-[1-5])?|BINARY|PACKED-DECIMAL|DISPLAY)\b", re.I)
-
-
 @dataclass
 class Field:
     level: int
@@ -27,15 +23,11 @@ class Field:
     parent: str | None = None
     line: int = 0
     children: list["Field"] = field(default_factory=list)
-
     @property
     def elementary(self) -> bool:
         return self.picture is not None
-
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
-
-
 def _expanded_count(pic: str, symbols: set[str]) -> int:
     pic = pic.upper()
     total = 0
@@ -56,17 +48,11 @@ def _expanded_count(pic: str, symbols: set[str]) -> int:
     if "DB" in pic:
         total += 2
     return total
-
-
 def picture_digits(pic: str) -> int:
     return _expanded_count(pic, {"9", "Z", "*", "P"})
-
-
 def display_length(pic: str) -> int:
     # S, V and P are non-storage symbols; edited characters occupy storage.
     return _expanded_count(pic, {"X", "A", "9", "Z", "*", "0", "B", "/", ",", ".", "+", "-"})
-
-
 def storage_length(pic: str, usage: str) -> int:
     digits = picture_digits(pic)
     u = (usage or "DISPLAY").upper()
@@ -79,8 +65,6 @@ def storage_length(pic: str, usage: str) -> int:
     if u == "COMP-2":
         return 8
     return display_length(pic)
-
-
 def _logical_lines(path: Path) -> list[tuple[int, str]]:
     lines: list[tuple[int, str]] = []
     pending = ""
@@ -101,8 +85,6 @@ def _logical_lines(path: Path) -> list[tuple[int, str]]:
     if pending:
         lines.append((start, pending))
     return lines
-
-
 def parse_copybook(path: Path) -> list[Field]:
     path = path.resolve()
     if not path.is_file():
@@ -143,8 +125,6 @@ def parse_copybook(path: Path) -> list[Field]:
         stack.append(node)
     _layout_siblings(roots, 0)
     return roots
-
-
 def _layout_siblings(nodes: list[Field], start: int) -> int:
     cursor = start
     extent = start
@@ -171,12 +151,8 @@ def _layout_siblings(nodes: list[Field], start: int) -> int:
             cursor = max(cursor, node_end)
         by_name[node.name] = node
     return max(cursor, extent)
-
-
 def record_length(fields: list[Field]) -> int:
     return max((f.offset + f.total_length for f in fields), default=0)
-
-
 def flatten_fields(fields: list[Field]) -> list[Field]:
     out: list[Field] = []
     for item in fields:
