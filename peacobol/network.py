@@ -1,157 +1,85 @@
-"""Network integration layer for PeaCOBOL Desktop GUI."""
+"""Network integration layer for PeaCOBOL Desktop GUI.
+
+Connects the desktop GUI to the loopback server (peacobol.server) so
+workbenches can run either locally (in-process) or through the server
+API. Long-running calls execute on worker threads via TaskRunner to
+keep the Tk main loop responsive.
+"""
+
+from __future__ import annotations
 
 import json
-import os
 import threading
-import time
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
-
-import requests
-
-from .gui import PeaCOBOLGUI, start_gui
-from .core import scan_project
-from .enterprise import resource_inventory, db2_compatibility
-from .supplychain import sbom, attest, immutable_export
+import urllib.error
+import urllib.request
+from typing import Any, Callable, Dict, Optional
 
 
 class NetworkError(Exception):
-    """Custom exception for network-related errors."""
+    """Raised when a request to the PeaCOBOL server fails."""
 
 
 class NetworkClient:
-    """Client for interacting with the PeaCOBOL server."""
+    """Minimal HTTP client for the token-protected loopback server."""
 
-    _BASE_URL = "http://127.0.0.1:8765"
+    BASE_URL = "http://127.0.0.1:8765"
 
-    def __init__(self, session_token: str, timeout: int = 30):
+    def __init__(self, session_token: str, timeout: int = 60):
         self.session_token = session_token
         self.timeout = timeout
-        self.session = requests.Session()
-        self.session.headers.update({
-            "Content-Type": "application/json",
-            "Cookie": f"PeaCOBOLSession={session_token}",
-        })
 
-    def _request(self, method: str, endpoint: str, **kwargs) -> Dict[str, Any]:
-        url = f"{self._BASE_URL}/{endpoint}"
+    def _request(self, endpoint: str) -> Dict[str, Any]:
+        url = f"{self.BASE_URL}/?view={endpoint}"
+        request = urllib.request.Request(url)
+        request.add_header("Cookie", f"PeaCOBOLSession={self.session_token}")
+        request.add_header("Host", "127.0.0.1")
         try:
-            response = self.session.request(
-                method,
-                url,
-                timeout=self.timeout,
-                **kwargs,
-            )
-            response.raise_for_status()
-            return response.json()
-        except requests.exceptions.RequestException as e:
-            raise NetworkError(f"Network request failed: {e}") from e
-
-    def run_scan(self, root_path: str) -> Dict[str, Any]:
-        return self._request("POST", "scan", json={"project": root_path})
-
-    def run_assurance(self, root_path: str, fail_on: str = "none") -> Dict[str, Any]:
-        return self._request("POST", "assure", json={"project": root_path, "fail_on": fail_on})
-
-    def run_diagnostics(self, root_path: str, spool: str) -> Dict[str, Any]:
-        return self._request("POST", "diagnose", json={"project": root_path, "spool": spool})
-
-    def run_impact(self, before: str, after: str) -> Dict[str, Any]:
-        return self._request("POST", "impact", json={"before": before, "after": after})
-
-    def run_test_cases(self, copybook: str, encoding: str = "ascii") -> Dict[str, Any]:
-        return self._request("POST", "tests", json={"copybook": copybook, "encoding": encoding})
-
-    def run_golden(self, actual: str, expected: str) -> Dict[str, Any]:
-        return self._request("POST", "golden", json={"actual": actual, "expected": expected})
-
-    def run_coverage(self, coverage: str, project: str) -> Dict[str, Any]:
-        return self._request("POST", "coverage", json={"coverage": coverage, "project": project})
-
-    def run_resources(self, project: str) -> Dict[str, Any]:
-        return self._request("POST", "resources", json={"project": project})
-
-    def run_db2(self, copybook: str, ddl: str) -> Dict[str, Any]:
-        return self._request("POST", "db2", json={"copybook": copybook, "ddl": ddl})
-
-    def run_sbom(self, project: str) -> Dict[str, Any]:
-        return self._request("POST", "sbom", json={"project": project})
-
-    def run_attest(self, file: str, verify: bool = False) -> Dict[str, Any]:
-        return self._request("POST", "attest", json={"file": file, "verify": verify})
-
-    def run_immutable_export(self, files: List[str], output: str) -> Dict[str, Any]:
-        return self._request("POST", "immutable-export", json={"files": files, "output": output})
-
-    def run_retention(self, directory: str, days: int) -> Dict[str, Any]:
-        return self._request("POST", "retention-plan", json={"directory": directory, "days": days})
+            with urllib.request.urlopen(request, timeout=self.timeout) as response:
+                if response.status != 200:
+                    raise NetworkError(f"Server returned HTTP {response.status}")
+                return {"status": response.status, "body": response.read().decode("utf-8", errors="replace")}
+        except urllib.error.HTTPError as exc:
+            if exc.code == 403:
+                raise NetworkError("Session rejected by the server (403). Restart the server and retry.") from exc
+            raise NetworkError(f"Server error: HTTP {exc.code}") from exc
+        except (urllib.error.URLError, TimeoutError, OSError) as exc:
+            raise NetworkError(f"Cannot reach the PeaCOBOL server: {exc}") from exc
 
 
-class GUIWrapper:
-    """Wrapper that connects GUI with network functionality."""
+class TaskRunner:
+    """Runs callables on a background thread and reports through callbacks.
 
-    def __init__(self, gui: PeaCOBOLGUI, network_client: NetworkClient):
-        self.gui = gui
-        self.network = network_client
-        self._current_task = None
-        self._task_thread = None
+    The GUI stays responsive because workbench execution never blocks the
+    Tk main loop. All callbacks are marshalled back onto the main thread
+    with ``root.after(0, ...)``.
+    """
 
-    def _start_task(self, task_func):
-        """Start a task in a separate thread to keep GUI responsive."""
-        self._current_task = task_func
-        self._task_thread = threading.Thread(target=self._execute_task, daemon=True)
-        self._task_thread.start()
+    def __init__(self, root, on_done: Callable[[Any], None], on_error: Callable[[Exception], None]):
+        self.root = root
+        self.on_done = on_done
+        self.on_error = on_error
+        self._thread: Optional[threading.Thread] = None
 
-    def _execute_task(self):
-        try:
-            result = self._current_task()
-            self.gui.root.after(0, lambda: self._handle_result(result))
-        except Exception as e:
-            self.gui.root.after(0, lambda: self._show_error(e))
+    @property
+    def busy(self) -> bool:
+        return self._thread is not None and self._thread.is_alive()
 
-    def _handle_result(self, result):
-        self.gui.root.after(0, lambda: self.gui.root.title(f"PeaCOBOL - Success"))
-        self.gui.root.after(0, lambda: self.gui.status_bar.config(text=f"Success: {result.get('status', 'Completed')}"))
+    def submit(self, func: Callable[[], Any], *args, **kwargs):
+        if self.busy:
+            raise RuntimeError("A task is already running")
 
-    def _show_error(self, error):
-        self.gui.root.after(0, lambda: ErrorDialog(self.gui.root, title="Error", message=str(error)))
-        self.gui.root.after(0, lambda: self.gui.status_bar.config(text=f"Error: {str(error)[:50]}..."))
+        def _worker():
+            try:
+                result = func(*args, **kwargs)
+            except Exception as exc:  # marshalled to UI thread
+                self.root.after(0, lambda e=exc: self.on_error(e))
+            else:
+                self.root.after(0, lambda r=result: self.on_done(r))
 
-    def run_scan(self, root_path: str):
-        self._start_task(lambda: self.network.run_scan(root_path))
+        self._thread = threading.Thread(target=_worker, daemon=True)
+        self._thread.start()
 
-    def run_assurance(self, root_path: str, fail_on: str = "none"):
-        self._start_task(lambda: self.network.run_assurance(root_path, fail_on))
-
-    def run_diagnostics(self, root_path: str, spool: str):
-        self._start_task(lambda: self.network.run_diagnostics(root_path, spool))
-
-    def run_impact(self, before: str, after: str):
-        self._start_task(lambda: self.network.run_impact(before, after))
-
-    def run_test_cases(self, copybook: str, encoding: str = "ascii"):
-        self._start_task(lambda: self.network.run_test_cases(copybook, encoding))
-
-    def run_golden(self, actual: str, expected: str):
-        self._start_task(lambda: self.network.run_golden(actual, expected))
-
-    def run_coverage(self, coverage: str, project: str):
-        self._start_task(lambda: self.network.run_coverage(coverage, project))
-
-    def run_resources(self, project: str):
-        self._start_task(lambda: self.network.run_resources(project))
-
-    def run_db2(self, copybook: str, ddl: str):
-        self._start_task(lambda: self.network.run_db2(copybook, ddl))
-
-    def run_sbom(self, project: str):
-        self._start_task(lambda: self.network.run_sbom(project))
-
-    def run_attest(self, file: str, verify: bool = False):
-        self._start_task(lambda: self.network.run_attest(file, verify))
-
-    def run_immutable_export(self, files: List[str], output: str):
-        self._start_task(lambda: self.network.run_immutable_export(files, output))
-
-    def run_retention(self, directory: str, days: int):
-        self._start_task(lambda: self.network.run_retention(directory, days))
+    def wait(self, timeout: Optional[float] = None):
+        """Blocking join — used by tests, never by the GUI."""
+        if self._thread is not None:
+            self._thread.join(timeout)

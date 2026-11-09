@@ -78,7 +78,10 @@ class AnalysisTests(unittest.TestCase):
             outside.write_text("GO TO X", encoding="utf-8")
             link = root / "link.cbl"
             try:
-                link.symlink_to(outside)
+                try:
+                    link.symlink_to(outside)
+                except OSError as exc:
+                    self.skipTest(f"Symlink creation unavailable on this platform: {exc}")
                 self.assertEqual(scan_project(root)["programs"], [])
             finally:
                 outside.unlink(missing_ok=True)

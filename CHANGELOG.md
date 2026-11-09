@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.9.0 — Responsive Workbench Execution
+
+### Added
+
+- Background `TaskRunner` executes workbenches on worker threads; callbacks marshal back onto the Tk main thread.
+- Indeterminate progress bar while a workbench runs, plus success/error status-bar states.
+- Bilingual UI strings (English, Spanish, French, German, Chinese) through the `I18N` layer.
+- Loopback-only `NetworkClient` (stdlib `urllib`, no new dependencies) for optional server-mode execution.
+- Reusable widget library: `ProgressBar`, `StatusLabel`, `ErrorDialog` with actionable tips, `ResultFrame` JSON pane.
+- Headless-safe GUI test suite (12 tests) covering imports, i18n, task dispatch, and busy-state locking.
+
+### Changed
+
+- Workbench buttons launch selected analyses against the opened project directory.
+- Diagnostics, impact, test, golden, coverage, and DB2 workbenches prompt for required input files before dispatch.
+- Version advanced from 0.8.0 to 0.9.0.
+
 ## 0.7.0 — Enterprise Integration Foundations
 
 ### Added

@@ -40,13 +40,18 @@
 
 ## Delivered: 0.8.0 — Desktop GUI and Enhanced Security
 - Desktop GUI interface for project management and workbenches.
-- Enhanced GUI with authentication and RBAC controls.
-- Immutable audit storage with hash-chain verification.
-- Sandboxed build workers with timeout and resource limits.
-- Enhanced DB2 compatibility engine with better error handling.
-- CICS and MQ resource inventory workbenches.
-- Signed attestations with strong HMAC-SHA256 signing.
-- Configurable dry-run retention plans.
+- Reusable widget library (ProgressBar, StatusLabel, ErrorDialog, ResultFrame).
+- Authentication prompts with per-session tokens.
+- Headless-safe automated GUI test suite.
+
+## Delivered: 0.9.0 — Responsive Workbench Execution
+- Background task runner keeps the Tk main loop free during scans.
+- Indeterminate progress bar plus status bar feedback for every workbench.
+- Bilingual UI (English, Spanish, French, German, Chinese) via the i18n layer.
+- Loopback server client (urllib-only, no new dependencies) for optional server mode.
+- Workbench launchers accept required file picks before execution starts.
+- Theme manager with light, dark, and high-contrast palettes and four font scales.
+- One-click result export to `reports/gui/` with hash-chained audit events and a 10 MiB cap.
 
 ## 1.0.0 — Validated Enterprise Platform
 Release only after independent security review, representative GnuCOBOL and z/OS estate validation, threat modeling, performance baselines, recovery testing, compatibility matrices, and documented certification evidence.

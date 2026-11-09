@@ -1,27 +1,21 @@
-"""Entry point for the PeaCOBOL desktop GUI application."""
+"""Entry point for the PeaCOBOL desktop GUI application (``peacobol-gui``)."""
 
-import sys
-from tkinter import tk
+import tkinter as tk
+from tkinter import messagebox
 from pathlib import Path
 
-from .auth import authenticate
-from .i18n import I18N
 from .gui import PeaCOBOLGUI
 
 
-def main():
+def main(argv=None) -> int:
     """Launch the PeaCOBOL desktop GUI."""
     root = tk.Tk()
-    root.title("PeaCOBOL Project Manager")
-    app = PeaCOBOLGUI(root, project_root=Path.cwd())
-    token = authenticate(app)
-    if token:
-        app.token = token
-    else:
-        messagebox.showwarning("PeaCOBOL", "Authentication cancelled.")
-        root.destroy()
-        return 1
-    app.root = root
+    root.title("PeaCOBOL")
+    try:
+        app = PeaCOBOLGUI(root, project_root=Path.cwd())
+    except Exception as exc:  # show a window-level failure, keep the process observable
+        messagebox.showerror("PeaCOBOL", f"Unable to start the GUI: {exc}")
+        raise
     root.mainloop()
     return 0
 
