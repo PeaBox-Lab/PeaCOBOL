@@ -22,6 +22,7 @@ from .sarif import to_sarif
 from .spool import read_spool
 from .supplychain import attest, immutable_export, retention_plan, sbom, verify_attestation
 from .testworkbench import cobol_check_stub, compare_golden, generate_cases
+from .gui import start_gui
 def _atomic_write(path: Path, data: str) -> None:
     path = path.resolve()
     path.parent.mkdir(parents=True, exist_ok=True)

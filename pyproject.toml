@@ -11,5 +11,6 @@ readme = "README.md"
 [project.scripts]
 peacobol = "peacobol.cli:main"
 peacobol-ui = "peacobol.server:main"
+peacobol-gui = "peacobol.__main__:main"
 [tool.setuptools]
 packages = ["peacobol"]
