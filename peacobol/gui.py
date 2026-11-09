@@ -190,3 +190,16 @@ class PeaCOBOLGUI:
     def request_token(self):
         self.token = authenticate()
         return self.token
+
+
+def start_gui(project_root=None):
+    """Public entry point for launching the desktop GUI."""
+    import tkinter as _tk
+    from pathlib import Path
+    root = _tk.Tk()
+    root.title("PeaCOBOL Project Manager")
+    app = PeaCOBOLGUI(root, project_root=project_root)
+    auth = authenticate(app)
+    if auth:
+        app.request_token()
+    root.mainloop()
