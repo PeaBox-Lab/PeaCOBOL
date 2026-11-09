@@ -18,9 +18,10 @@ from .knowledge import list_knowledge, load_catalog, lookup
 from .policy import evaluate_policy
 from .profiles import list_profiles, load_profile, resolve_profile_name
 from .records import convert_records, decode_record, hex_view
+from .rulesintegrity import rules_manifest, verify_rules_manifest
 from .sarif import to_sarif
 from .spool import read_spool
-from .supplychain import attest, immutable_export, retention_plan, sbom, verify_attestation
+from .supplychain import attest, immutable_export, retention_plan, sbom, sign_release, verify_attestation, verify_release
 from .testworkbench import cobol_check_stub, compare_golden, generate_cases
 from .gui import start_gui
 def _atomic_write(path: Path, data: str) -> None:
@@ -82,6 +83,10 @@ def parser() -> argparse.ArgumentParser:
     x = sub.add_parser("attest", help="Create a local in-toto-style attestation"); x.add_argument("file"); x.add_argument("--verify", action="store_true"); x.add_argument("-o", "--output")
     x = sub.add_parser("immutable-export", help="Create a content-addressed evidence archive"); x.add_argument("files", nargs="+"); x.add_argument("-o", "--output", required=True)
     x = sub.add_parser("retention-plan", help="Create a dry-run retention plan"); x.add_argument("directory"); x.add_argument("--days", type=int, required=True); x.add_argument("-o", "--output")
+    x = sub.add_parser("rules-manifest", help="Emit the rule-definition integrity manifest"); x.add_argument("-o", "--output")
+    x = sub.add_parser("rules-verify", help="Verify a report's embedded rules manifest"); x.add_argument("report"); x.add_argument("-o", "--output")
+    x = sub.add_parser("sign-release", help="Create an HMAC-signed immutable release archive"); x.add_argument("files", nargs="+"); x.add_argument("--release-name", required=True); x.add_argument("-o", "--output", required=True)
+    x = sub.add_parser("verify-release", help="Verify a signed release against its archive"); x.add_argument("envelope"); x.add_argument("archive"); x.add_argument("-o", "--output")
     return p
 def _select_profile(args: argparse.Namespace, root: Path, fallback: str) -> str:
     selected = resolve_profile_name(root, args.profile, fallback)
@@ -197,6 +202,19 @@ def dispatch(args: argparse.Namespace) -> Any:
         return immutable_export([Path(value) for value in args.files], Path(args.output))
     if args.cmd == "retention-plan":
         return retention_plan(Path(args.directory), args.days)
+    if args.cmd == "rules-manifest":
+        return rules_manifest()
+    if args.cmd == "rules-verify":
+        report = json.loads(Path(args.report).read_text(encoding="utf-8"))
+        result = verify_rules_manifest(report.get("rules_manifest", report))
+        result["ok"] = result["ok"] and bool(report.get("ok", True))
+        return result
+    if args.cmd == "sign-release":
+        return sign_release([Path(value) for value in args.files], Path(args.output), args.release_name)
+    if args.cmd == "verify-release":
+        envelope = json.loads(Path(args.envelope).read_text(encoding="utf-8"))
+        result = verify_release(envelope, Path(args.archive))
+        return result if result["ok"] else (_ for _ in ()).throw(ValueError(result.get("error", "release verification failed")))
     raise ValueError(f"Unknown command: {args.cmd}")
 def main(argv: list[str] | None = None) -> int:
     args = parser().parse_args(argv)

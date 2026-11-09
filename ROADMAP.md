@@ -54,4 +54,4 @@
 - One-click result export to `reports/gui/` with hash-chained audit events and a 10 MiB cap.
 
 ## 1.0.0 — Validated Enterprise Platform
-Release only after independent security review, representative GnuCOBOL and z/OS estate validation, threat modeling, performance baselines, recovery testing, compatibility matrices, and documented certification evidence.
+Offline controls now in place: rules-integrity manifests embedded in every scan/assurance report, signed-release signing and verification commands, and CI-usable `rules-manifest`/`rules-verify`. Remaining gates before tagging 1.0.0 (external, not automatable here): independent security review, representative GnuCOBOL and z/OS estate validation, threat modeling, performance baselines, recovery testing, compatibility matrices, and documented certification evidence.

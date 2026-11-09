@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any
 from .copybook import parse_copybook
 from .core import Finding, SOURCE_SUFFIXES, _safe_files, scan_project
+from .rulesintegrity import rules_manifest
 PROGRAM_ID_RE = re.compile(r"\bPROGRAM-ID\.?\s+([A-Z0-9-]+)", re.I)
 COPY_RE = re.compile(r"\bCOPY\s+([A-Z0-9_-]+)", re.I)
 CALL_RE = re.compile(r"\bCALL\s+['\"]([^'\"]+)['\"]", re.I)
@@ -228,6 +229,7 @@ def analyze_assurance(root: Path, fail_on: str = "none") -> dict[str, Any]:
     return {
         "schema": "peacobol-assurance-1",
         "project": root.name,
+        "rules_manifest_hash": rules_manifest()["manifest_hash"],
         "program_graph": _program_graph(root, programs),
         "copybook_graph": _copy_graph(root, files),
         "field_access": access,

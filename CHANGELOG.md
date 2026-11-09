@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.0.0 hardening foundations (release candidate)
+
+### Added
+
+- Rules integrity manifests: every scan and assurance report embeds `rules_manifest_hash`, a reproducible hash of the rule-definition sources.
+- `peacobol rules-manifest` / `rules-verify` CLI commands for CI tamper detection.
+- Signed release workflow: `peacobol sign-release` produces an immutable archive plus HMAC-SHA256 envelope; `verify-release` checks signature *and* archive bytes.
+- Release envelopes require `PEACOBOL_ATTESTATION_KEY` (>= 32 bytes) and reject whitespace-bearing release names.
+
 ## 0.9.0 — Responsive Workbench Execution
 
 ### Added

@@ -10,6 +10,7 @@ from typing import Iterable
 from .copybook import Field, parse_copybook, picture_digits, storage_length, record_length
 from .diagnostics import diagnostic_summary, normalize_diagnostics
 from .profiles import BUILTIN_PROFILES, load_profile, resolve_profile_name
+from .rulesintegrity import rules_manifest
 CALL_RE = re.compile(r"\bCALL\s+['\"]([^'\"]+)['\"]", re.I)
 COPY_RE = re.compile(r"\bCOPY\s+([A-Z0-9_-]+)", re.I)
 PARA_RE = re.compile(r"^\s*([A-Z0-9-]+)\.\s*$", re.I)
@@ -82,6 +83,7 @@ def scan_project(root: Path) -> dict:
     return {
         "schema": "peacobol-scan-3",
         "project": root.name,
+        "rules_manifest_hash": rules_manifest()["manifest_hash"],
         "programs": programs,
         "copybooks": copybooks,
         "calls": calls,

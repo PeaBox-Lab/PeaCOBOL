@@ -115,6 +115,54 @@ def immutable_export(files: list[Path], output: Path) -> dict[str, Any]:
     return {"schema": "peacobol-immutable-export-1", "output": output.name, "export_id": export_id, "sha256": hashlib.sha256(output.read_bytes()).hexdigest(), "files": manifest}
 
 
+def sign_release(files: list[Path], output: Path, release_name: str) -> dict[str, Any]:
+    """Create an immutable export and an HMAC-signed release attestation.
+
+    Combines the existing offline archive with a signed in-toto statement
+    over the export ID. Requires PEACOBOL_ATTESTATION_KEY (>= 32 bytes).
+    """
+    if not release_name or any(char.isspace() for char in release_name):
+        raise ValueError("Release name must be non-empty without whitespace")
+    export = immutable_export(files, output)
+    statement = {
+        "_type": "https://in-toto.io/Statement/v1",
+        "subject": [{"name": export["output"], "digest": {"sha256": hashlib.sha256(output.read_bytes()).hexdigest()}}],
+        "predicateType": "https://peacobol.local/release/v1",
+        "predicate": {"export_id": export["export_id"], "releaseName": release_name, "buildType": "peacobol/offline", "invocation": {"networkAccess": False}},
+    }
+    key = os.environ.get("PEACOBOL_ATTESTATION_KEY")
+    if not key or len(key.encode("utf-8")) < 32:
+        raise ValueError("PEACOBOL_ATTESTATION_KEY must contain at least 32 bytes to sign a release")
+    envelope: dict[str, Any] = {"schema": "peacobol-release-1", "release": release_name, "statement": statement}
+    envelope["signature"] = hmac.new(key.encode("utf-8"), _canonical(statement), hashlib.sha256).hexdigest()
+    envelope["signature_algorithm"] = "HMAC-SHA256"
+    envelope["release_hash"] = hashlib.sha256(_canonical(envelope)).hexdigest()
+    return envelope
+
+
+def verify_release(envelope: dict[str, Any], archive: Path) -> dict[str, Any]:
+    """Verify a signed release envelope against the actual archive bytes."""
+    if not isinstance(envelope, dict) or not envelope.get("signature"):
+        return {"ok": False, "error": "Release is unsigned or malformed"}
+    key = os.environ.get("PEACOBOL_ATTESTATION_KEY")
+    if not key or len(key.encode("utf-8")) < 32:
+        return {"ok": False, "error": "Matching release signing key is unavailable"}
+    if not envelope.get("statement") or "releaseHashing" in envelope["statement"]:
+        return {"ok": False, "error": "Envelope contains an unexpected statement shape"}
+    archive = Path(archive).resolve()
+    if archive.is_symlink() or not archive.is_file():
+        return {"ok": False, "error": "Release archive not found"}
+    statement = envelope["statement"]
+    expected = hmac.new(key.encode("utf-8"), _canonical(statement), hashlib.sha256).hexdigest()
+    if not hmac.compare_digest(envelope["signature"], expected):
+        return {"ok": False, "signed": True, "error": "Release signature does not verify"}
+    subject = statement.get("subject", [{}])[0]
+    archive_digest = hashlib.sha256(archive.read_bytes()).hexdigest()
+    if subject.get("digest", {}).get("sha256") != archive_digest:
+        return {"ok": False, "signed": True, "error": "Release archive bytes do not match the signed statement"}
+    return {"ok": True, "signed": True, "algorithm": envelope.get("signature_algorithm"), "release": envelope.get("release")}
+
+
 def retention_plan(directory: Path, days: int, now: datetime | None = None) -> dict[str, Any]:
     directory = directory.resolve()
     if days < 1:
