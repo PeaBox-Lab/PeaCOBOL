@@ -1,3 +1,26 @@
+# PeaCOBOL 1.0.0 Release Notes
+
+## Release theme
+
+**Release Hardening Foundations**
+
+This release adds reproducible rules-integrity manifests, CI tamper-detection commands, and an HMAC-signed immutable release workflow while deliberately keeping all analysis, evidence, and signing local.
+
+## Delivered
+
+- Rules integrity manifests: every scan and assurance report embeds `rules_manifest_hash`, a reproducible hash of the rule-definition sources.
+- `peacobol rules-manifest` / `rules-verify` CLI commands for CI tamper detection.
+- Signed release workflow: `peacobol sign-release` produces an immutable archive plus HMAC-SHA256 envelope; `verify-release` checks signature *and* archive bytes.
+- Release envelopes require `PEACOBOL_ATTESTATION_KEY` (>= 32 bytes) and reject whitespace-bearing release names.
+
+## Validation summary
+
+- The full automated test suite passes, including the release-hardening tests for rules integrity and signed-release verification.
+
+## Boundary
+
+No network connection, no job submission, and no public-key release signing is performed. Signing uses a local environment-held HMAC key.
+
 # PeaCOBOL 0.7.0 Release Notes
 
 ## Release theme

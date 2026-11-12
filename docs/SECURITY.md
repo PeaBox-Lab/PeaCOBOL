@@ -15,6 +15,12 @@
 \- `--no-audit` is an explicit operator escape hatch and should be disabled by organizational wrappers in regulated environments.
 \- The loopback UI has no user authentication and must not be exposed through port forwarding or a shared bind.
 \- Text and data parsers require additional fuzzing before handling hostile inputs at scale.
+## 1.0.0 release-hardening controls
+
+- Rules integrity manifests are embedded in every scan and assurance report with reproducible rule-source hashes.
+- Signed releases use an environment-held HMAC key (>= 32 bytes) and immutable content-addressed archives.
+- Release verification checks the envelope signature and the archive bytes.
+
 ## Required before regulated production
 Add sandboxed build workers, signed releases and rules, vault-managed credentials, RBAC, immutable audit storage, SAST/DAST, dependency and license scanning, threat modeling, fuzzing, independent validation, disaster recovery, retention controls, and sector-specific certification evidence.
 ## 0.3.0 build-control additions
