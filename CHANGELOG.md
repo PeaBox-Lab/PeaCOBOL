@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.3.0 — Release Evidence Alignment
+
+### Changed
+
+- Version advanced from 1.2.0 to 1.3.0.
+- Release evidence surfaces aligned across package metadata, runtime version, GUI title, loopback server header, launchers, automated tests, and signed-release identifiers.
+- Release artifacts regenerated for the validated release-evidence foundation.
+
 ## 1.2.0 — Release Evidence Automation
 
 ### Added

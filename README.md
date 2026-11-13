@@ -1,6 +1,6 @@
-# PeaCOBOL 1.2.0
+# PeaCOBOL 1.3.0
 
-PeaCOBOL is a local-first COBOL data, development, diagnostics, assurance, testing, and enterprise-inventory toolkit. Version 1.2.0 is the **Release Evidence Automation** release.
+PeaCOBOL is a local-first COBOL data, development, diagnostics, assurance, testing, and enterprise-inventory toolkit. Version 1.3.0 is the **Release Evidence Alignment** release.
 
 ## Easy start
 

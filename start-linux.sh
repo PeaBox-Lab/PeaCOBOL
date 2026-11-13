@@ -3,7 +3,7 @@ set -eu
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 cd "$SCRIPT_DIR"
 
-echo "PeaCOBOL 1.2.0 - Linux launcher"
+echo "PeaCOBOL 1.3.0 - Linux launcher"
 if command -v python3 >/dev/null 2>&1; then
   PYTHON=python3
 elif command -v python >/dev/null 2>&1; then

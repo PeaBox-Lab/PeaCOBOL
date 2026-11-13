@@ -268,9 +268,9 @@ class PeaCOBOLGUI:
 
 
 def start_gui(project_root: Optional[Path] = None):
-    """Public entry point for launching the desktop GUI (v1.2.0)."""
+    """Public entry point for launching the desktop GUI (v1.3.0)."""
     root = tk.Tk()
-    root.title("PeaCOBOL 1.2.0")
+    root.title("PeaCOBOL 1.3.0")
     root.geometry("1100x720")
     app = PeaCOBOLGUI(root, project_root=project_root)
     root.mainloop()

@@ -165,7 +165,7 @@ class GuiTests(unittest.TestCase):
         conn.request("GET",path,headers=headers); response=conn.getresponse(); data=response.read().decode(); response_headers=dict(response.getheaders()); conn.close(); return response.status,response_headers,data
     def test_home_and_all_navigation_are_rendered(self):
         status,headers,body=self.get("/")
-        self.assertEqual(status,200); self.assertIn("PeaCOBOL 1.2.0",body); self.assertIn("Test cases",body); self.assertIn("Enterprise resources",body); self.assertIn("SBOM",body); self.assertNotIn("test-session-token",body); self.assertIn("default-src 'none'",headers["Content-Security-Policy"]); self.assertEqual(headers["Cache-Control"],"no-store")
+        self.assertEqual(status,200); self.assertIn("PeaCOBOL 1.3.0",body); self.assertIn("Test cases",body); self.assertIn("Enterprise resources",body); self.assertIn("SBOM",body); self.assertNotIn("test-session-token",body); self.assertIn("default-src 'none'",headers["Content-Security-Policy"]); self.assertEqual(headers["Cache-Control"],"no-store")
     def test_scan_and_test_case_workbenches(self):
         status,_,body=self.get("/?view=scan&project=project")
         self.assertEqual(status,200); self.assertIn("Programs",body)

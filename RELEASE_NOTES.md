@@ -1,3 +1,23 @@
+# PeaCOBOL 1.3.0 Release Notes
+
+## Release theme
+
+**Release Evidence Alignment**
+
+This release aligns the release-evidence surface to the validated release-evidence foundation and regenerates the release artifacts.
+
+## Delivered
+
+- Version alignment across package metadata, runtime version, GUI title, loopback server header, launchers, automated tests, and signed-release identifiers.
+
+## Validation summary
+
+- The full automated test suite passes, including release-evidence and signed-release tests for 1.3.0.
+
+## Boundary
+
+No network connection, no job submission, and no public-key release signing is performed. Signing uses a local environment-held HMAC key.
+
 # PeaCOBOL 1.2.0 Release Notes
 
 ## Release theme
