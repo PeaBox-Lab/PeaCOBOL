@@ -104,7 +104,7 @@ def create_project(path: Path, name: str) -> dict:
         (path / directory).mkdir(exist_ok=True)
     config = {
         "name": name,
-        "version": "1.1.0",
+        "version": "1.1.1",
         "source": ["src"],
         "copybooks": ["copybooks"],
         "default_profile": "development",

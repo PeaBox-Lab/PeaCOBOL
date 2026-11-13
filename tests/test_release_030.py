@@ -140,7 +140,7 @@ class ProjectTests(unittest.TestCase):
             root = Path(directory) / "project"
             create_project(root, "project")
             config = json.loads((root / "peacobol.json").read_text(encoding="utf-8"))
-            self.assertEqual(config["version"], "1.1.0")
+            self.assertEqual(config["version"], "1.1.1")
             self.assertEqual(set(config["profiles"]), {"development", "release", "banking", "aerospace"})
             self.assertEqual(scan_project(root)["schema"], "peacobol-scan-3")
 if __name__ == "__main__":

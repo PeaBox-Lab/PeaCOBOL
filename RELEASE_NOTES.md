@@ -1,3 +1,23 @@
+# PeaCOBOL 1.1.1 Release Notes
+
+## Release theme
+
+**Release Evidence Patch**
+
+This release aligns the package version with the validated release-evidence foundation and regenerates the release artifacts.
+
+## Delivered
+
+- Version alignment and regenerated release artifacts for the validated release-evidence foundation.
+
+## Validation summary
+
+- The full automated test suite passes.
+
+## Boundary
+
+No network connection, no job submission, and no public-key release signing is performed. Signing uses a local environment-held HMAC key.
+
 # PeaCOBOL 1.1.0 Release Notes
 
 ## Release theme

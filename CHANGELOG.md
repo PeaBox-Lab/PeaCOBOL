@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.1 — Release Evidence Patch
+
+### Changed
+
+- Version advanced from 1.1.0 to 1.1.1.
+
 ## 1.1.0 — Validation and Release Evidence
 
 ### Added
