@@ -1,4 +1,4 @@
-"""Automated tests for the PeaCOBOL desktop GUI layer (1.0.0).
+"""Automated tests for the PeaCOBOL desktop GUI layer (1.1.0).
 
 These tests are headless-safe: they never call mainloop() and never
 require a display, exercising import wiring, i18n, and background

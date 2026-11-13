@@ -53,11 +53,17 @@
 - Theme manager with light, dark, and high-contrast palettes and four font scales.
 - One-click result export to `reports/gui/` with hash-chained audit events and a 10 MiB cap.
 
+## Delivered: 1.1.0 — Validation and Release Evidence
+- Release evidence bundles assemble scan, SBOM, attestation, and export evidence into one hash-chained archive.
+
 ## Delivered: 1.0.0 — Release Hardening Foundations
 - Rules integrity manifests: every scan and assurance report embeds a reproducible `rules_manifest_hash` of the rule-definition sources.
 - `peacobol rules-manifest` / `rules-verify` CLI commands for CI tamper detection.
 - Signed release workflow: `peacobol sign-release` produces an immutable archive plus HMAC-SHA256 envelope; `verify-release` checks signature and archive bytes.
 - Release envelopes require `PEACOBOL_ATTESTATION_KEY` (>= 32 bytes) and reject whitespace-bearing release names.
+
+## 1.1.0 — Validated Enterprise Platform
+Validation gates now automated: release evidence assembly, version consistency checks, launcher syntax checks, and packaging verification. Remaining gates before tagging 1.1.0 (external, not automatable here): independent security review, representative GnuCOBOL and z/OS estate validation, threat modeling, performance baselines, recovery testing, compatibility matrices, and documented certification evidence.
 
 ## 1.0.0 — Validated Enterprise Platform
 Offline controls now in place: rules-integrity manifests embedded in every scan/assurance report, signed-release signing and verification commands, and CI-usable `rules-manifest`/`rules-verify`. Remaining gates before tagging 1.0.0 (external, not automatable here): independent security review, representative GnuCOBOL and z/OS estate validation, threat modeling, performance baselines, recovery testing, compatibility matrices, and documented certification evidence.

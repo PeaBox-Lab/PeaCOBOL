@@ -1,7 +1,7 @@
 @echo off
 setlocal
 cd /d "%~dp0"
-echo PeaCOBOL 1.0.0 - Linux via Windows Subsystem for Linux
+echo PeaCOBOL 1.1.0 - Linux via Windows Subsystem for Linux
 where wsl.exe >nul 2>nul
 if errorlevel 1 (
   echo ERROR: Windows Subsystem for Linux was not found.

@@ -1,4 +1,4 @@
-"""Release-hardening tests for 1.0.0: rules integrity and signed releases."""
+"""Release-hardening tests for 1.1.0: rules integrity and signed releases."""
 
 import copy
 import os
@@ -64,8 +64,8 @@ class ReleaseSigningTests(unittest.TestCase):
             root = Path(directory)
             report = root / "scan.json"; report.write_text('{"ok": true}', encoding="utf-8")
             archive = root / "release.tar.gz"
-            envelope = sign_release([report], archive, "PeaCOBOL-1.0.0")
-            self.assertEqual(envelope["release"], "PeaCOBOL-1.0.0")
+            envelope = sign_release([report], archive, "PeaCOBOL-1.1.0")
+            self.assertEqual(envelope["release"], "PeaCOBOL-1.1.0")
             self.assertEqual(envelope["signature_algorithm"], "HMAC-SHA256")
             self.assertTrue(archive.is_file())
             self.assertTrue(verify_release(envelope, archive)["ok"])

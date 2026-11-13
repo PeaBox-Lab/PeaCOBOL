@@ -1,4 +1,4 @@
-"""Rules integrity for PeaCOBOL release hardening (1.0.0).
+"""Rules integrity for PeaCOBOL release hardening (1.1.0).
 
 Every analysis report embeds a hash of the rule-definition sources so a
 tampered analyzer on disk is detectable by comparing a report's embedded

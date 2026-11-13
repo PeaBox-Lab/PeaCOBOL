@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.1.0 — Validation and Release Evidence
+
+### Added
+
+- Release evidence bundles: `peacobol evidence` assembles scan reports, SBOM, attestations, and immutable exports into one hash-chained archive.
+
+### Changed
+
+- Version advanced from 1.0.0 to 1.1.0.
+
 ## 1.0.0 — Release Hardening Foundations
 
 ### Added

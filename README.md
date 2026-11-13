@@ -1,6 +1,6 @@
-# PeaCOBOL 1.0.0
+# PeaCOBOL 1.1.0
 
-PeaCOBOL is a local-first COBOL data, development, diagnostics, assurance, testing, and enterprise-inventory toolkit. Version 1.0.0 is the **Release Hardening Foundations** release.
+PeaCOBOL is a local-first COBOL data, development, diagnostics, assurance, testing, and enterprise-inventory toolkit. Version 1.1.0 is the **Validation and Release Evidence** release.
 
 ## Easy start
 
@@ -83,13 +83,13 @@ The allow-list format is:
 }
 ```
 
-PeaCOBOL 1.0.0 only creates a **dry-run plan**. It does not perform a network request or submit a job.
+PeaCOBOL 1.1.0 only creates a **dry-run plan**. It does not perform a network request or submit a job.
 
 Create supply-chain evidence:
 
 ```bash
 peacobol sbom . -o sbom.json
-peacobol attest PeaCOBOL-1.0.0.zip -o attestation.json
+peacobol attest PeaCOBOL-1.1.0.zip -o attestation.json
 peacobol immutable-export reports/evidence.json sbom.json attestation.json -o evidence.tar.gz
 peacobol retention-plan reports --days 90 -o retention-plan.json
 ```

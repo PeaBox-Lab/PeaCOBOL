@@ -1,3 +1,24 @@
+# PeaCOBOL 1.1.0 Release Notes
+
+## Release theme
+
+**Validation and Release Evidence**
+
+This release adds assembled release evidence bundles and automated release validation gates while deliberately keeping all analysis, evidence, and signing local.
+
+## Delivered
+
+- Release evidence bundle assembly from scan reports, SBOM, attestations, and immutable exports into a single archive.
+- Release validation gates: version consistency, launcher syntax, and packaging checks before a release is tagged.
+
+## Validation summary
+
+- The full automated test suite passes, including the release-evidence tests.
+
+## Boundary
+
+No network connection, no job submission, and no public-key release signing is performed. Signing uses a local environment-held HMAC key.
+
 # PeaCOBOL 1.0.0 Release Notes
 
 ## Release theme

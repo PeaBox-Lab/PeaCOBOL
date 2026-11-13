@@ -2,7 +2,7 @@
 setlocal
 cd /d "%~dp0"
 
-echo PeaCOBOL 1.0.0 - Windows launcher
+echo PeaCOBOL 1.1.0 - Windows launcher
 set "PYTHON_CMD="
 where py >nul 2>nul && set "PYTHON_CMD=py -3"
 if not defined PYTHON_CMD where python >nul 2>nul && set "PYTHON_CMD=python"
