@@ -1,6 +1,6 @@
 # Architecture
 
-PeaCOBOL 1.2.0 adds automated release evidence generation while retaining the offline enterprise and supply-chain layer:
+PeaCOBOL 1.3.0 adds release-evidence alignment across package metadata, runtime version, GUI, loopback server, launchers, and automated tests. The offline enterprise and supply-chain layer from 1.2.0 is retained:
 
 1. **Db2 compatibility engine** compares local DDL columns with computed COBOL field representation.
 2. **Resource inventory engine** extracts Db2 object references, CICS commands/resources, and MQ API calls with locations.

@@ -83,13 +83,13 @@ The allow-list format is:
 }
 ```
 
-PeaCOBOL 1.2.0 only creates a **dry-run plan**. It does not perform a network request or submit a job.
+PeaCOBOL 1.3.0 only creates a **dry-run plan**. It does not perform a network request or submit a job.
 
 Create supply-chain evidence:
 
 ```bash
 peacobol sbom . -o sbom.json
-peacobol attest PeaCOBOL-1.2.0.zip -o attestation.json
+peacobol attest PeaCOBOL-1.3.0.zip -o attestation.json
 peacobol immutable-export reports/evidence.json sbom.json attestation.json -o evidence.tar.gz
 peacobol retention-plan reports --days 90 -o retention-plan.json
 ```

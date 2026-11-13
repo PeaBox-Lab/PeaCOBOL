@@ -9,6 +9,7 @@ This release aligns the release-evidence surface to the validated release-eviden
 ## Delivered
 
 - Version alignment across package metadata, runtime version, GUI title, loopback server header, launchers, automated tests, and signed-release identifiers.
+- Release artifacts regenerated for the validated release-evidence foundation.
 
 ## Validation summary
 
@@ -126,10 +127,12 @@ This release adds static enterprise inventories, guarded offline integration pla
 
 - 105 automated tests pass: 92 retained tests and 13 new 0.7.0 tests.
 - Python source compilation and Linux launcher syntax checks pass.
-- Tests cover DB2 compatibility, resource inventories, guarded submission plans, SBOM, attestations, immutable exports, retention plans, launchers, and enterprise GUI views.
+- Tests cover DB2 compatibility, resource inventories, submission dry-runs, supply-chain output, and archive integrity.
 - End-to-end CLI validation covers incompatibility gates, inventory hashes, submission dry-runs, supply-chain output, and archive integrity.
 - Independent security review found no vulnerabilities, and correctness certification found no significant issues after remediation.
 
 ## Boundary
 
 No enterprise network connection or mainframe job submission is performed. All enterprise features in this release are local analysis, evidence, or validation plans.
+
+# PeaCOBOL 0.6.0 Release Notes
