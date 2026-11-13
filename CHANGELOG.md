@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.2.0 — Release Evidence Automation
+
+### Added
+
+- Automated release evidence bundle generation integrated with signed release workflows.
+
+### Changed
+
+- Version advanced from 1.1.1 to 1.2.0.
+
 ## 1.1.1 — Release Evidence Patch
 
 ### Changed

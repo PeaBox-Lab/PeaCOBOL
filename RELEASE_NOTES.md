@@ -1,3 +1,23 @@
+# PeaCOBOL 1.2.0 Release Notes
+
+## Release theme
+
+**Release Evidence Automation**
+
+This release adds automated release evidence bundle generation integrated with signed release workflows.
+
+## Delivered
+
+- Automated release evidence bundle generation integrated with signed release workflows.
+
+## Validation summary
+
+- The full automated test suite passes.
+
+## Boundary
+
+No network connection, no job submission, and no public-key release signing is performed. Signing uses a local environment-held HMAC key.
+
 # PeaCOBOL 1.1.1 Release Notes
 
 ## Release theme
